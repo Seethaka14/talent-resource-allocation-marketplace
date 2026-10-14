@@ -38,8 +38,24 @@ class EmployeeControllerIntegrationTest {
     @Autowired
     private EmployeeRepository employeeRepository;
 
+    @Autowired
+    private com.talentmarketplace.repository.EmployeeSkillRepository employeeSkillRepository;
+
+    @Autowired
+    private com.talentmarketplace.repository.EmployeeUnavailabilityRepository unavailabilityRepository;
+
+    @Autowired
+    private com.talentmarketplace.repository.DemandSkillRepository demandSkillRepository;
+
+    @Autowired
+    private com.talentmarketplace.repository.ProjectDemandRepository demandRepository;
+
     @BeforeEach
     void cleanDatabase() {
+        demandSkillRepository.deleteAll();
+        demandRepository.deleteAll();
+        unavailabilityRepository.deleteAll();
+        employeeSkillRepository.deleteAll();
         employeeRepository.deleteAll();
     }
 

@@ -40,8 +40,16 @@ class SkillControllerIntegrationTest {
     @Autowired
     private EmployeeSkillRepository employeeSkillRepository;
 
+    @Autowired
+    private com.talentmarketplace.repository.DemandSkillRepository demandSkillRepository;
+
+    @Autowired
+    private com.talentmarketplace.repository.ProjectDemandRepository demandRepository;
+
     @BeforeEach
     void cleanDatabase() {
+        demandSkillRepository.deleteAll();
+        demandRepository.deleteAll();
         employeeSkillRepository.deleteAll();
         skillRepository.deleteAll();
     }
