@@ -22,8 +22,12 @@ import tools.jackson.databind.ObjectMapper;
 import com.talentmarketplace.dto.request.CreateEmployeeRequest;
 import com.talentmarketplace.dto.request.UpdateEmployeeRequest;
 import com.talentmarketplace.entity.Employee;
+import com.talentmarketplace.config.TestDatabaseSafetyGuard;
 import com.talentmarketplace.entity.EmploymentStatus;
 import com.talentmarketplace.repository.EmployeeRepository;
+import com.talentmarketplace.repository.ResourceAllocationRepository;
+
+import javax.sql.DataSource;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -34,6 +38,12 @@ class EmployeeControllerIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private DataSource dataSource;
+
+    @Autowired
+    private ResourceAllocationRepository allocationRepository;
 
     @Autowired
     private EmployeeRepository employeeRepository;
@@ -52,6 +62,9 @@ class EmployeeControllerIntegrationTest {
 
     @BeforeEach
     void cleanDatabase() {
+        TestDatabaseSafetyGuard.assertSafeTestDatabase(dataSource);
+
+        allocationRepository.deleteAll();
         demandSkillRepository.deleteAll();
         demandRepository.deleteAll();
         unavailabilityRepository.deleteAll();

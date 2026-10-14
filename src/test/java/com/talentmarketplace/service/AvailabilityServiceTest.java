@@ -25,8 +25,11 @@ import com.talentmarketplace.entity.EmploymentStatus;
 import com.talentmarketplace.entity.UnavailabilityType;
 import com.talentmarketplace.exception.BusinessRuleValidationException;
 import com.talentmarketplace.exception.ResourceNotFoundException;
+import com.talentmarketplace.entity.AllocationStatus;
+import com.talentmarketplace.entity.ResourceAllocation;
 import com.talentmarketplace.repository.EmployeeRepository;
 import com.talentmarketplace.repository.EmployeeUnavailabilityRepository;
+import com.talentmarketplace.repository.ResourceAllocationRepository;
 
 @ExtendWith(MockitoExtension.class)
 class AvailabilityServiceTest {
@@ -36,6 +39,9 @@ class AvailabilityServiceTest {
 
     @Mock
     private EmployeeUnavailabilityRepository unavailabilityRepository;
+
+    @Mock
+    private ResourceAllocationRepository allocationRepository;
 
     @InjectMocks
     private AvailabilityServiceImpl availabilityService;
@@ -201,5 +207,60 @@ class AvailabilityServiceTest {
         assertThatThrownBy(() -> availabilityService.assessEmployeeAvailability(999L, startDate, endDate, 50))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Employee not found");
+    }
+
+    @Test
+    @DisplayName("Should reduce remaining capacity when confirmed allocation overlaps demand period")
+    void testAssessAvailability_confirmedAllocationConsumesCapacity() {
+        LocalDate startDate = LocalDate.of(2026, 11, 1);
+        LocalDate endDate = LocalDate.of(2026, 11, 30);
+
+        ResourceAllocation confirmedAlloc = new ResourceAllocation(
+                activeEmployee, null, LocalDate.of(2026, 11, 5), LocalDate.of(2026, 11, 25),
+                60, AllocationStatus.CONFIRMED, "PM"
+        );
+
+        when(employeeRepository.findById(1L)).thenReturn(Optional.of(activeEmployee));
+        when(unavailabilityRepository.findOverlappingUnavailabilities(1L, startDate, endDate))
+                .thenReturn(List.of());
+        when(allocationRepository.findOverlappingConfirmedAllocations(1L, startDate, endDate))
+                .thenReturn(List.of(confirmedAlloc));
+
+        // Employee max is 100%, 60% is confirmed -> remaining is 40%.
+        // Requesting 50% should fail.
+        AvailabilityAssessmentResponse response = availabilityService.assessEmployeeAvailability(
+                1L, startDate, endDate, 50
+        );
+
+        assertThat(response.isAvailable()).isFalse();
+        assertThat(response.getRemainingCapacityPercent()).isEqualTo(40);
+        assertThat(response.getReason()).contains("currently allocated: 60%");
+    }
+
+    @Test
+    @DisplayName("Should consider employee available when confirmed allocation leaves sufficient capacity")
+    void testAssessAvailability_confirmedAllocationLeavesSufficientCapacity() {
+        LocalDate startDate = LocalDate.of(2026, 11, 1);
+        LocalDate endDate = LocalDate.of(2026, 11, 30);
+
+        ResourceAllocation confirmedAlloc = new ResourceAllocation(
+                activeEmployee, null, LocalDate.of(2026, 11, 5), LocalDate.of(2026, 11, 25),
+                40, AllocationStatus.CONFIRMED, "PM"
+        );
+
+        when(employeeRepository.findById(1L)).thenReturn(Optional.of(activeEmployee));
+        when(unavailabilityRepository.findOverlappingUnavailabilities(1L, startDate, endDate))
+                .thenReturn(List.of());
+        when(allocationRepository.findOverlappingConfirmedAllocations(1L, startDate, endDate))
+                .thenReturn(List.of(confirmedAlloc));
+
+        // Employee max is 100%, 40% is confirmed -> remaining is 60%.
+        // Requesting 50% should succeed.
+        AvailabilityAssessmentResponse response = availabilityService.assessEmployeeAvailability(
+                1L, startDate, endDate, 50
+        );
+
+        assertThat(response.isAvailable()).isTrue();
+        assertThat(response.getRemainingCapacityPercent()).isEqualTo(60);
     }
 }

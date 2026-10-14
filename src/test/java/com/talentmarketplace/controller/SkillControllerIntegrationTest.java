@@ -21,8 +21,12 @@ import com.talentmarketplace.dto.request.CreateSkillRequest;
 import com.talentmarketplace.dto.request.UpdateSkillRequest;
 import com.talentmarketplace.entity.Skill;
 import com.talentmarketplace.entity.SkillCategory;
+import com.talentmarketplace.config.TestDatabaseSafetyGuard;
 import com.talentmarketplace.repository.EmployeeSkillRepository;
+import com.talentmarketplace.repository.ResourceAllocationRepository;
 import com.talentmarketplace.repository.SkillRepository;
+
+import javax.sql.DataSource;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -33,6 +37,12 @@ class SkillControllerIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private DataSource dataSource;
+
+    @Autowired
+    private ResourceAllocationRepository allocationRepository;
 
     @Autowired
     private SkillRepository skillRepository;
@@ -48,6 +58,9 @@ class SkillControllerIntegrationTest {
 
     @BeforeEach
     void cleanDatabase() {
+        TestDatabaseSafetyGuard.assertSafeTestDatabase(dataSource);
+
+        allocationRepository.deleteAll();
         demandSkillRepository.deleteAll();
         demandRepository.deleteAll();
         employeeSkillRepository.deleteAll();

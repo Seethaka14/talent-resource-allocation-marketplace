@@ -12,4 +12,8 @@ public interface AvailabilityService {
 
     AvailabilityAssessmentResponse assessEmployeeAvailability(Employee employee, LocalDate startDate,
                                                              LocalDate endDate, Integer requestedAllocationPercent);
+
+    AvailabilityAssessmentResponse assessEmployeeAvailabilityExcludingAllocation(
+            Employee employee, LocalDate startDate, LocalDate endDate,
+            Integer requestedAllocationPercent, Long excludeAllocationId);
 }

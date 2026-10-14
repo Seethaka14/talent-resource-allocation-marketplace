@@ -27,11 +27,15 @@ import com.talentmarketplace.entity.Skill;
 import com.talentmarketplace.entity.SkillCategory;
 import com.talentmarketplace.entity.UnavailabilityType;
 import com.talentmarketplace.repository.DemandSkillRepository;
+import com.talentmarketplace.config.TestDatabaseSafetyGuard;
 import com.talentmarketplace.repository.EmployeeRepository;
 import com.talentmarketplace.repository.EmployeeSkillRepository;
 import com.talentmarketplace.repository.EmployeeUnavailabilityRepository;
 import com.talentmarketplace.repository.ProjectDemandRepository;
+import com.talentmarketplace.repository.ResourceAllocationRepository;
 import com.talentmarketplace.repository.SkillRepository;
+
+import javax.sql.DataSource;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -39,6 +43,12 @@ class CandidateRecommendationControllerIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private DataSource dataSource;
+
+    @Autowired
+    private ResourceAllocationRepository allocationRepository;
 
     @Autowired
     private ProjectDemandRepository demandRepository;
@@ -66,6 +76,9 @@ class CandidateRecommendationControllerIntegrationTest {
 
     @BeforeEach
     void cleanDatabase() {
+        TestDatabaseSafetyGuard.assertSafeTestDatabase(dataSource);
+
+        allocationRepository.deleteAll();
         demandSkillRepository.deleteAll();
         demandRepository.deleteAll();
         unavailabilityRepository.deleteAll();

@@ -2,6 +2,8 @@ package com.talentmarketplace.service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -12,10 +14,12 @@ import com.talentmarketplace.dto.response.UnavailabilityResponse;
 import com.talentmarketplace.entity.Employee;
 import com.talentmarketplace.entity.EmployeeUnavailability;
 import com.talentmarketplace.entity.EmploymentStatus;
+import com.talentmarketplace.entity.ResourceAllocation;
 import com.talentmarketplace.exception.BusinessRuleValidationException;
 import com.talentmarketplace.exception.ResourceNotFoundException;
 import com.talentmarketplace.repository.EmployeeRepository;
 import com.talentmarketplace.repository.EmployeeUnavailabilityRepository;
+import com.talentmarketplace.repository.ResourceAllocationRepository;
 
 @Service
 @Transactional(readOnly = true)
@@ -23,11 +27,14 @@ public class AvailabilityServiceImpl implements AvailabilityService {
 
     private final EmployeeRepository employeeRepository;
     private final EmployeeUnavailabilityRepository unavailabilityRepository;
+    private final ResourceAllocationRepository allocationRepository;
 
     public AvailabilityServiceImpl(EmployeeRepository employeeRepository,
-                                   EmployeeUnavailabilityRepository unavailabilityRepository) {
+                                   EmployeeUnavailabilityRepository unavailabilityRepository,
+                                   ResourceAllocationRepository allocationRepository) {
         this.employeeRepository = employeeRepository;
         this.unavailabilityRepository = unavailabilityRepository;
+        this.allocationRepository = allocationRepository;
     }
 
     @Override
@@ -42,6 +49,13 @@ public class AvailabilityServiceImpl implements AvailabilityService {
     @Override
     public AvailabilityAssessmentResponse assessEmployeeAvailability(Employee employee, LocalDate startDate,
                                                                      LocalDate endDate, Integer requestedAllocationPercent) {
+        return assessEmployeeAvailabilityExcludingAllocation(employee, startDate, endDate, requestedAllocationPercent, null);
+    }
+
+    @Override
+    public AvailabilityAssessmentResponse assessEmployeeAvailabilityExcludingAllocation(
+            Employee employee, LocalDate startDate, LocalDate endDate,
+            Integer requestedAllocationPercent, Long excludeAllocationId) {
         if (startDate == null || endDate == null) {
             throw new BusinessRuleValidationException("Start date and end date are required for availability assessment");
         }
@@ -122,10 +136,9 @@ public class AvailabilityServiceImpl implements AvailabilityService {
             );
         }
 
-        // 4. Remaining Capacity Check (Extension point for upcoming Allocation module)
-        // Until active allocation records are persisted in Phase 5, existing allocations consume 0%
-        int currentlyAllocated = 0;
-        int remainingCapacity = Math.max(0, maxCapacity - currentlyAllocated);
+        // 4. Remaining Capacity Check with Real Active Confirmed Allocation Records
+        int peakAllocated = calculatePeakAllocation(employee.getId(), startDate, endDate, excludeAllocationId);
+        int remainingCapacity = Math.max(0, maxCapacity - peakAllocated);
 
         if (requestedPercent > remainingCapacity) {
             return new AvailabilityAssessmentResponse(
@@ -140,8 +153,8 @@ public class AvailabilityServiceImpl implements AvailabilityService {
                     false,
                     remainingCapacity,
                     List.of(),
-                    String.format("Requested allocation (%d%%) exceeds remaining available capacity (%d%%)",
-                            requestedPercent, remainingCapacity)
+                    String.format("Requested allocation (%d%%) exceeds remaining available capacity (%d%%, currently allocated: %d%%)",
+                            requestedPercent, remainingCapacity, peakAllocated)
             );
         }
 
@@ -160,5 +173,52 @@ public class AvailabilityServiceImpl implements AvailabilityService {
                 List.of(),
                 String.format("Employee is fully available with %d%% remaining capacity", remainingCapacity)
         );
+    }
+
+    private int calculatePeakAllocation(Long employeeId, LocalDate startDate, LocalDate endDate, Long excludeAllocationId) {
+        if (allocationRepository == null) {
+            return 0;
+        }
+
+        List<ResourceAllocation> allocations;
+        if (excludeAllocationId != null) {
+            allocations = allocationRepository.findOverlappingConfirmedAllocationsExcludingId(
+                    employeeId, excludeAllocationId, startDate, endDate
+            );
+        } else {
+            allocations = allocationRepository.findOverlappingConfirmedAllocations(
+                    employeeId, startDate, endDate
+            );
+        }
+
+        if (allocations == null || allocations.isEmpty()) {
+            return 0;
+        }
+
+        Set<LocalDate> criticalDates = new TreeSet<>();
+        criticalDates.add(startDate);
+        for (ResourceAllocation a : allocations) {
+            if (!a.getStartDate().isBefore(startDate) && !a.getStartDate().isAfter(endDate)) {
+                criticalDates.add(a.getStartDate());
+            }
+            LocalDate dayAfterEnd = a.getEndDate().plusDays(1);
+            if (!dayAfterEnd.isBefore(startDate) && !dayAfterEnd.isAfter(endDate)) {
+                criticalDates.add(dayAfterEnd);
+            }
+        }
+
+        int peak = 0;
+        for (LocalDate date : criticalDates) {
+            int currentOnDate = 0;
+            for (ResourceAllocation a : allocations) {
+                if (!date.isBefore(a.getStartDate()) && !date.isAfter(a.getEndDate())) {
+                    currentOnDate += a.getAllocationPercent();
+                }
+            }
+            if (currentOnDate > peak) {
+                peak = currentOnDate;
+            }
+        }
+        return peak;
     }
 }
