@@ -69,6 +69,51 @@ public class Employee {
     @Column(name = "employment_status", nullable = false, length = 20)
     private EmploymentStatus employmentStatus;
 
+    @Column(name = "name", length = 100, nullable = false)
+    private String name;
+
+    @Column(name = "max_capacity_percent", nullable = false)
+    private Integer maxCapacityPercent = 100;
+
+    @jakarta.persistence.Version
+    @Column(name = "version")
+    private Long version;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private java.time.LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private java.time.LocalDateTime updatedAt;
+
+    @jakarta.persistence.PrePersist
+    protected void onCreate() {
+        this.createdAt = java.time.LocalDateTime.now();
+        this.updatedAt = java.time.LocalDateTime.now();
+        syncName();
+        if (this.maxCapacityPercent == null) {
+            this.maxCapacityPercent = 100;
+        }
+    }
+
+    @jakarta.persistence.PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = java.time.LocalDateTime.now();
+        syncName();
+        if (this.maxCapacityPercent == null) {
+            this.maxCapacityPercent = 100;
+        }
+    }
+
+    private void syncName() {
+        if (this.firstName != null && this.lastName != null) {
+            this.name = (this.firstName.trim() + " " + this.lastName.trim()).trim();
+        } else if (this.firstName != null) {
+            this.name = this.firstName.trim();
+        } else if (this.lastName != null) {
+            this.name = this.lastName.trim();
+        }
+    }
+
     // Default Constructor
     public Employee() {
     }
@@ -93,6 +138,23 @@ public class Employee {
         this.location = location;
         this.joiningDate = joiningDate;
         this.employmentStatus = employmentStatus;
+        this.maxCapacityPercent = 100;
+        syncName();
+    }
+
+    public Employee(String employeeCode,
+                    String firstName,
+                    String lastName,
+                    String email,
+                    String department,
+                    String designation,
+                    String location,
+                    LocalDate joiningDate,
+                    EmploymentStatus employmentStatus,
+                    Integer maxCapacityPercent) {
+
+        this(employeeCode, firstName, lastName, email, department, designation, location, joiningDate, employmentStatus);
+        this.maxCapacityPercent = maxCapacityPercent != null ? maxCapacityPercent : 100;
     }
 
     // Getters and Setters
@@ -115,6 +177,7 @@ public class Employee {
 
     public void setFirstName(String firstName) {
         this.firstName = firstName;
+        syncName();
     }
 
     public String getLastName() {
@@ -123,6 +186,18 @@ public class Employee {
 
     public void setLastName(String lastName) {
         this.lastName = lastName;
+        syncName();
+    }
+
+    public String getName() {
+        if (this.name == null) {
+            syncName();
+        }
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getEmail() {
@@ -173,6 +248,38 @@ public class Employee {
         this.employmentStatus = employmentStatus;
     }
 
+    public Integer getMaxCapacityPercent() {
+        return maxCapacityPercent;
+    }
+
+    public void setMaxCapacityPercent(Integer maxCapacityPercent) {
+        this.maxCapacityPercent = maxCapacityPercent;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
+    }
+
+    public java.time.LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(java.time.LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public java.time.LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(java.time.LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
     @Override
     public String toString() {
         return "Employee{" +
@@ -180,12 +287,14 @@ public class Employee {
                 ", employeeCode='" + employeeCode + '\'' +
                 ", firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
+                ", name='" + name + '\'' +
                 ", email='" + email + '\'' +
                 ", department='" + department + '\'' +
                 ", designation='" + designation + '\'' +
                 ", location='" + location + '\'' +
                 ", joiningDate=" + joiningDate +
                 ", employmentStatus=" + employmentStatus +
+                ", maxCapacityPercent=" + maxCapacityPercent +
                 '}';
     }
 }
