@@ -89,7 +89,7 @@ public class ResourceAllocationServiceImpl implements ResourceAllocationService 
     }
 
     @Override
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public AllocationResponse confirmAllocation(Long allocationId, String confirmedBy) {
         ResourceAllocation allocation = allocationRepository.findByIdWithDetails(allocationId)
                 .orElseThrow(() -> new ResourceNotFoundException("ResourceAllocation", "id", allocationId));
@@ -104,14 +104,34 @@ public class ResourceAllocationServiceImpl implements ResourceAllocationService 
             );
         }
 
-        Employee employee = allocation.getEmployee();
-        ProjectDemand demand = allocation.getDemand();
+        Long employeeId = allocation.getEmployee().getId();
 
+        // Database-level concurrency protection: Acquire pessimistic write lock on the Employee row.
+        // This strictly serializes all concurrent allocation confirmations for this employee.
+        Employee employee = employeeRepository.findByIdForUpdate(employeeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee", "id", employeeId));
+
+        // Re-read allocation state inside critical section to guard against concurrent mutations (e.g. concurrent cancellation)
+        allocation = allocationRepository.findByIdWithDetails(allocationId)
+                .orElseThrow(() -> new ResourceNotFoundException("ResourceAllocation", "id", allocationId));
+
+        if (allocation.getStatus() == AllocationStatus.CONFIRMED) {
+            return AllocationResponse.fromEntity(allocation);
+        }
+
+        if (allocation.getStatus() == AllocationStatus.CANCELLED || allocation.getStatus() == AllocationStatus.REJECTED) {
+            throw new BusinessRuleValidationException(
+                    "Cannot confirm an allocation with status " + allocation.getStatus()
+            );
+        }
+
+        ProjectDemand demand = allocation.getDemand();
         if (demand.getStatus() == DemandStatus.CANCELLED) {
             throw new BusinessRuleValidationException("Cannot confirm allocation for a cancelled project demand");
         }
 
-        // Concurrency-Safe Revalidation: Re-assess capacity at confirmation time excluding current allocation
+        // Concurrency-Safe Revalidation: Recalculate capacity after obtaining the lock,
+        // reading all newly committed overlapping confirmed allocations under READ_COMMITTED.
         AvailabilityAssessmentResponse assessment = availabilityService.assessEmployeeAvailabilityExcludingAllocation(
                 employee, allocation.getStartDate(), allocation.getEndDate(), allocation.getAllocationPercent(), allocation.getId()
         );

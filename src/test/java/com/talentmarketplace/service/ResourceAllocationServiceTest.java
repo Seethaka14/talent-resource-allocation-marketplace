@@ -157,6 +157,7 @@ class ResourceAllocationServiceTest {
         allocation.setId(100L);
 
         when(allocationRepository.findByIdWithDetails(100L)).thenReturn(Optional.of(allocation));
+        when(employeeRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(employee));
         when(availabilityService.assessEmployeeAvailabilityExcludingAllocation(
                 eq(employee), any(), any(), eq(50), eq(100L)))
                 .thenReturn(createAvailableResponse(100));
@@ -182,6 +183,7 @@ class ResourceAllocationServiceTest {
         allocation.setId(100L);
 
         when(allocationRepository.findByIdWithDetails(100L)).thenReturn(Optional.of(allocation));
+        when(employeeRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(employee));
         when(availabilityService.assessEmployeeAvailabilityExcludingAllocation(
                 eq(employee), any(), any(), eq(50), eq(100L)))
                 .thenReturn(createUnavailableResponse("Capacity already taken by another concurrent allocation"));
