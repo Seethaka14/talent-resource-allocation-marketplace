@@ -21,4 +21,6 @@ public interface ResourceAllocationService {
     List<AllocationResponse> getAllocationsForEmployee(Long employeeId);
 
     List<AllocationResponse> getAllocationsForDemand(Long demandId);
+
+    List<AllocationResponse> getAllAllocations(com.talentmarketplace.entity.AllocationStatus status);
 }

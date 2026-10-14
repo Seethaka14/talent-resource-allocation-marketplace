@@ -12,18 +12,71 @@
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
+    <!-- Global Notification Banner -->
+    <div id="toastNotification" class="toast-notification" role="alert" aria-live="polite" style="display: none;"></div>
+
+    <!-- Confirmation / Action Modal -->
+    <div id="actionModal" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="modalTitle">Confirm Action</h3>
+                <button type="button" class="modal-close-btn" id="modalCloseBtn" aria-label="Close dialog">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Injected dynamically -->
+            </div>
+            <div class="modal-footer" id="modalFooter">
+                <button type="button" class="btn btn-secondary" id="modalCancelBtn">Cancel</button>
+                <button type="button" class="btn btn-primary" id="modalConfirmBtn">Proceed</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Navbar -->
     <header class="navbar">
         <div class="nav-container">
-            <a href="/" class="brand">
+            <a href="/" class="brand" aria-label="Talent Marketplace Home">
                 <div class="brand-icon">⚡</div>
                 <div class="brand-text">
                     <h1>Talent Marketplace</h1>
                     <p>Agentic Resource Matching & Allocation</p>
                 </div>
             </a>
+
+            <!-- Screen Navigation Tabs -->
+            <nav class="nav-tabs" aria-label="Primary Application Navigation">
+                <button class="nav-tab active" data-screen="demand-intake" id="navTabDemandIntake">
+                    <span class="tab-icon">📋</span>
+                    <span class="tab-label">Demand Intake</span>
+                </button>
+                <button class="nav-tab" data-screen="skills-matrix" id="navTabSkillsMatrix">
+                    <span class="tab-icon">👥</span>
+                    <span class="tab-label">Skills Matrix</span>
+                </button>
+                <button class="nav-tab" data-screen="resource-ranking" id="navTabResourceRanking">
+                    <span class="tab-icon">🔍</span>
+                    <span class="tab-label">Resource Ranking</span>
+                </button>
+                <button class="nav-tab" data-screen="candidate-comparison" id="navTabCandidateComparison">
+                    <span class="tab-icon">⚖️</span>
+                    <span class="tab-label">Comparison</span>
+                </button>
+                <button class="nav-tab" data-screen="allocation-approvals" id="navTabAllocationApprovals">
+                    <span class="tab-icon">🛡️</span>
+                    <span class="tab-label">Allocations</span>
+                </button>
+                <button class="nav-tab" data-screen="utilization-dashboard" id="navTabUtilizationDashboard">
+                    <span class="tab-icon">📊</span>
+                    <span class="tab-label">Utilization & Gaps</span>
+                </button>
+                <button class="nav-tab" data-screen="ai-assistant" id="navTabAiAssistant">
+                    <span class="tab-icon">🦙</span>
+                    <span class="tab-label">AI Assistant</span>
+                </button>
+            </nav>
+
             <div class="status-badge-container">
-                <div class="ollama-badge" id="ollamaStatusPill">
+                <div class="ollama-badge" id="ollamaStatusPill" title="Ollama Service Status">
                     <span class="pulse-dot" id="statusDot"></span>
                     <span id="statusText">Checking Ollama...</span>
                 </div>
@@ -31,79 +84,574 @@
         </div>
     </header>
 
-    <!-- Main Content Area -->
-    <main class="main-wrapper">
-        <!-- AI Staffing Agent Chat Panel -->
-        <section class="chat-panel" aria-label="AI Staffing Agent Chat">
-            <div class="chat-header">
-                <div class="chat-header-title">
-                    <span>🦙</span>
-                    <span>AI Staffing Agent</span>
-                    <span class="chat-tools-count">6 Active Tools</span>
+    <!-- Main Container -->
+    <main class="main-content" id="mainAppContent">
+
+        <!-- ========================================== -->
+        <!-- SCREEN 1: DEMAND INTAKE                    -->
+        <!-- ========================================== -->
+        <section id="screen-demand-intake" class="app-screen active" aria-labelledby="headingDemandIntake">
+            <div class="screen-header">
+                <div>
+                    <h2 id="headingDemandIntake">Project Demand Intake</h2>
+                    <p class="screen-subtitle">Create a structured project demand with required skills, minimum proficiencies, and allocation requirements.</p>
                 </div>
-                <div style="font-size: 0.75rem; color: var(--text-muted);">
-                    Local model: <strong>llama3.2:3b</strong>
+                <button type="button" class="btn btn-secondary" id="btnRefreshDemands">🔄 Refresh Demands</button>
+            </div>
+
+            <div class="grid-layout-2col">
+                <!-- Demand Creation Form Card -->
+                <div class="card form-card">
+                    <div class="card-header">
+                        <h3>New Project Demand</h3>
+                        <span class="badge badge-grounded">Deterministic Validation</span>
+                    </div>
+
+                    <form id="demandForm" class="standard-form" novalidate>
+                        <!-- Inline Validation / Status Banner -->
+                        <div id="demandFormErrorBanner" class="error-banner" style="display: none;" role="alert"></div>
+                        <div id="demandFormSuccessBanner" class="success-banner" style="display: none;" role="status"></div>
+
+                        <div class="form-row form-row-2">
+                            <div class="form-group">
+                                <label for="demandCode">Demand Code <span class="required">*</span></label>
+                                <div class="input-with-action">
+                                    <input type="text" id="demandCode" name="demandCode" required maxlength="30" placeholder="e.g. DEM-2026-001" pattern="^[A-Za-z0-9_-]{3,30}$">
+                                    <button type="button" id="btnGenDemandCode" class="btn-input-addon" title="Auto-generate demand code">⚡ Auto</button>
+                                </div>
+                                <small class="form-hint">3-30 letters, numbers, hyphens or underscores.</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="projectName">Project Name <span class="required">*</span></label>
+                                <input type="text" id="projectName" name="projectName" required maxlength="100" placeholder="e.g. Cloud Banking Migration">
+                            </div>
+                        </div>
+
+                        <div class="form-row form-row-2">
+                            <div class="form-group">
+                                <label for="demandRole">Role / Title <span class="required">*</span></label>
+                                <input type="text" id="demandRole" name="role" required maxlength="50" placeholder="e.g. Principal Cloud Architect">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="demandDepartment">Department</label>
+                                <select id="demandDepartment" name="department">
+                                    <option value="Engineering">Engineering</option>
+                                    <option value="Platform">Platform</option>
+                                    <option value="Data & Analytics">Data & Analytics</option>
+                                    <option value="Product">Product</option>
+                                    <option value="Quality Engineering">Quality Engineering</option>
+                                    <option value="Security">Security</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row form-row-2">
+                            <div class="form-group">
+                                <label for="demandLocation">Location <span class="required">*</span></label>
+                                <input type="text" id="demandLocation" name="location" required maxlength="100" placeholder="e.g. London or Bangalore">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="demandPriority">Priority <span class="required">*</span></label>
+                                <select id="demandPriority" name="priority" required>
+                                    <option value="LOW">LOW</option>
+                                    <option value="MEDIUM">MEDIUM</option>
+                                    <option value="HIGH" selected>HIGH</option>
+                                    <option value="CRITICAL">CRITICAL</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row form-row-3">
+                            <div class="form-group">
+                                <label for="demandStartDate">Start Date <span class="required">*</span></label>
+                                <input type="date" id="demandStartDate" name="startDate" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="demandEndDate">End Date <span class="required">*</span></label>
+                                <input type="date" id="demandEndDate" name="endDate" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="demandAllocationPercent">Allocation % <span class="required">*</span></label>
+                                <input type="number" id="demandAllocationPercent" name="allocationPercent" min="1" max="100" value="100" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="demandExperience">Required Experience (Years)</label>
+                            <input type="number" id="demandExperience" name="requiredExperienceYears" min="0" max="40" step="0.5" value="3.0">
+                        </div>
+
+                        <!-- Skill Requirements Sub-Section -->
+                        <div class="form-section-divider">
+                            <h4>Skill Requirements</h4>
+                            <p class="form-section-sub">Add mandatory or optional skill requirements with minimum proficiency levels.</p>
+                        </div>
+
+                        <div class="skill-builder-row">
+                            <div class="form-group flex-2">
+                                <label for="skillSelect">Select Skill</label>
+                                <select id="skillSelect">
+                                    <option value="">-- Choose Skill --</option>
+                                    <!-- Populated dynamically via /api/skills -->
+                                </select>
+                            </div>
+
+                            <div class="form-group flex-1">
+                                <label for="skillProficiency">Min Proficiency</label>
+                                <select id="skillProficiency">
+                                    <option value="BEGINNER">BEGINNER</option>
+                                    <option value="INTERMEDIATE" selected>INTERMEDIATE</option>
+                                    <option value="ADVANCED">ADVANCED</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group flex-checkbox">
+                                <label class="checkbox-container">
+                                    <input type="checkbox" id="skillMandatory" checked>
+                                    <span class="checkbox-label">Mandatory</span>
+                                </label>
+                            </div>
+
+                            <div class="form-group flex-action">
+                                <button type="button" id="btnAddSkillReq" class="btn btn-secondary btn-sm">+ Add Skill</button>
+                            </div>
+                        </div>
+
+                        <!-- Skill Requirements List Chips -->
+                        <div id="requiredSkillsChipsContainer" class="skills-chips-wrapper">
+                            <p class="text-muted text-sm" id="emptySkillsPrompt">No skill requirements added yet. Select a skill above and click '+ Add Skill'.</p>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="reset" class="btn btn-secondary" id="btnResetDemandForm">Reset</button>
+                            <button type="submit" class="btn btn-primary" id="btnSubmitDemand">Create Demand</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Existing Open Demands List Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Open Project Demands</h3>
+                        <span class="badge badge-tool" id="openDemandsCountBadge">0 Demands</span>
+                    </div>
+                    <div class="card-body scrollable-body" id="openDemandsListContainer">
+                        <div class="loading-state"><div class="spinner"></div><p>Loading open demands...</p></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- SCREEN 2: EMPLOYEE SKILLS MATRIX           -->
+        <!-- ========================================== -->
+        <section id="screen-skills-matrix" class="app-screen" aria-labelledby="headingSkillsMatrix">
+            <div class="screen-header">
+                <div>
+                    <h2 id="headingSkillsMatrix">Employee Skills Matrix</h2>
+                    <p class="screen-subtitle">Comprehensive directory of enterprise talent, proficiency weights, and verified technical competencies.</p>
+                </div>
+                <div class="header-actions">
+                    <button type="button" class="btn btn-secondary" id="btnRefreshMatrix">🔄 Refresh Directory</button>
                 </div>
             </div>
 
-            <!-- Messages Stream -->
-            <div class="chat-messages" id="chatMessages">
-                <div class="message-bubble assistant">
-                    <div class="avatar ai-avatar">🦙</div>
-                    <div class="message-content">
-                        Hello! I am your AI Staffing Agent connected to your local <strong>llama3.2:3b</strong> model.
-                        I can help you search project demands, match candidates with deterministic scoring, check employee availability, explain skill gaps, and view allocation history.
-                        <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-secondary);">
-                            Try asking a question or click one of the suggested prompts below!
-                        </div>
+            <!-- Filters Bar -->
+            <div class="filters-card">
+                <div class="filters-grid">
+                    <div class="filter-item">
+                        <label for="filterMatrixSearch">Search Employee</label>
+                        <input type="text" id="filterMatrixSearch" placeholder="Filter by name or employee code...">
+                    </div>
+                    <div class="filter-item">
+                        <label for="filterMatrixDepartment">Department</label>
+                        <select id="filterMatrixDepartment">
+                            <option value="">All Departments</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label for="filterMatrixSkill">Skill</label>
+                        <select id="filterMatrixSkill">
+                            <option value="">All Skills</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label for="filterMatrixProficiency">Min Proficiency</label>
+                        <select id="filterMatrixProficiency">
+                            <option value="">Any Proficiency</option>
+                            <option value="BEGINNER">BEGINNER (1)</option>
+                            <option value="INTERMEDIATE">INTERMEDIATE (2)</option>
+                            <option value="ADVANCED">ADVANCED (3)</option>
+                        </select>
+                    </div>
+                    <div class="filter-item">
+                        <label for="filterMatrixStatus">Status</label>
+                        <select id="filterMatrixStatus">
+                            <option value="">All Statuses</option>
+                            <option value="ACTIVE" selected>ACTIVE Only</option>
+                            <option value="ON_LEAVE">ON_LEAVE</option>
+                            <option value="NOTICE_PERIOD">NOTICE_PERIOD</option>
+                            <option value="TERMINATED">TERMINATED</option>
+                        </select>
                     </div>
                 </div>
             </div>
 
-            <!-- Quick Prompts Bar -->
-            <div class="quick-prompts" aria-label="Quick Prompt Suggestions">
-                <button class="prompt-chip" data-prompt="Find eligible candidates for demand 50">Find candidates for demand 50</button>
-                <button class="prompt-chip" data-prompt="Why is Marcus Brody not eligible for demand 50?">Why is Marcus Brody ineligible?</button>
-                <button class="prompt-chip" data-prompt="Compare the top three candidates for demand 50">Compare top candidates</button>
-                <button class="prompt-chip" data-prompt="Check whether Devon Vance is available during November 2026">Check Devon Vance availability</button>
-                <button class="prompt-chip" data-prompt="Which mandatory skills are missing for demand 50?">Missing mandatory skills</button>
-                <button class="prompt-chip" data-prompt="Show the current allocation status for demand 50">Allocation status</button>
+            <!-- Matrix Table -->
+            <div class="card table-card">
+                <div class="card-header">
+                    <div class="table-info">
+                        <h3>Employee Roster & Skill Breakdown</h3>
+                        <span id="matrixCountDisplay" class="text-sm text-secondary">Showing 0 employees</span>
+                    </div>
+                </div>
+                <div class="table-responsive" id="matrixTableContainer">
+                    <div class="loading-state"><div class="spinner"></div><p>Loading employee skills matrix...</p></div>
+                </div>
             </div>
-
-            <!-- Chat Input Area -->
-            <form class="chat-input-area" id="chatForm" onsubmit="return false;">
-                <textarea
-                    id="chatInput"
-                    class="chat-input"
-                    placeholder="Ask about candidate recommendations, availability, or allocations..."
-                    rows="1"
-                    aria-label="Ask AI Assistant"
-                ></textarea>
-                <button type="submit" id="sendBtn" class="send-btn" aria-label="Send message">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="22" y1="2" x2="11" y2="13"></line>
-                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                    </svg>
-                </button>
-            </form>
         </section>
 
-        <!-- Marketplace Dashboard Overview -->
-        <section class="dashboard-panel" aria-label="Marketplace Overview Dashboard">
-            <div class="dashboard-header">
-                <div class="tab-buttons">
-                    <button class="tab-btn active" data-tab="demands">Open Demands</button>
-                    <button class="tab-btn" data-tab="candidates">Top Recommendations</button>
-                    <button class="tab-btn" data-tab="allocations">Resource Allocations</button>
+        <!-- ========================================== -->
+        <!-- SCREEN 3: RESOURCE SEARCH AND RANKING      -->
+        <!-- ========================================== -->
+        <section id="screen-resource-ranking" class="app-screen" aria-labelledby="headingResourceRanking">
+            <div class="screen-header">
+                <div>
+                    <h2 id="headingResourceRanking">Resource Search & Recommendation Ranking</h2>
+                    <p class="screen-subtitle">Deterministic candidate evaluation engine scoring skill match, availability, and location alignment.</p>
                 </div>
             </div>
 
-            <div class="dashboard-content" id="dashboardContent">
-                <!-- Dynamically loaded by app.js -->
+            <!-- Demand Selector & Controls -->
+            <div class="controls-card">
+                <div class="demand-selector-bar">
+                    <div class="form-group flex-2">
+                        <label for="rankingDemandSelect">Select Target Project Demand <span class="required">*</span></label>
+                        <select id="rankingDemandSelect">
+                            <option value="">-- Choose Demand to Evaluate --</option>
+                        </select>
+                    </div>
+                    <div class="form-group flex-1">
+                        <label for="rankingMinScore">Min Match Score</label>
+                        <input type="number" id="rankingMinScore" min="0" max="100" value="0" placeholder="e.g. 50">
+                    </div>
+                    <div class="form-group flex-checkbox">
+                        <label class="checkbox-container">
+                            <input type="checkbox" id="rankingEligibleOnly">
+                            <span class="checkbox-label">Eligible Only</span>
+                        </label>
+                    </div>
+                    <div class="form-group flex-action">
+                        <button type="button" class="btn btn-primary" id="btnRunRanking">Rank Candidates</button>
+                    </div>
+                </div>
+
+                <!-- Selected Demand Summary Ribbon -->
+                <div id="rankingDemandSummary" class="demand-summary-ribbon" style="display: none;"></div>
+            </div>
+
+            <!-- Action Toolbar for Selected Candidates -->
+            <div id="rankingActionToolbar" class="action-toolbar" style="display: none;">
+                <span id="selectedCandidatesCountText">0 candidates selected</span>
+                <div class="toolbar-buttons">
+                    <button type="button" class="btn btn-primary btn-sm" id="btnCompareSelectedFromRanking">⚖️ Compare Selected Candidates</button>
+                    <button type="button" class="btn btn-secondary btn-sm" id="btnClearSelectedCandidates">Clear Selection</button>
+                </div>
+            </div>
+
+            <!-- Candidates Results List Container -->
+            <div id="rankingResultsContainer">
+                <div class="empty-state">
+                    <span class="empty-icon">🔍</span>
+                    <h3>Select a Project Demand</h3>
+                    <p>Select an open project demand from the dropdown above and click 'Rank Candidates' to run deterministic candidate evaluation.</p>
+                </div>
             </div>
         </section>
+
+        <!-- ========================================== -->
+        <!-- SCREEN 4: CANDIDATE COMPARISON             -->
+        <!-- ========================================== -->
+        <section id="screen-candidate-comparison" class="app-screen" aria-labelledby="headingCandidateComparison">
+            <div class="screen-header">
+                <div>
+                    <h2 id="headingCandidateComparison">Side-by-Side Candidate Comparison</h2>
+                    <p class="screen-subtitle">Inspect candidates side-by-side: skills, proficiency levels, availability assessments, and exclusion reasons.</p>
+                </div>
+            </div>
+
+            <!-- Comparison Selection Bar -->
+            <div class="controls-card">
+                <div class="comparison-header-row">
+                    <div class="form-group flex-2">
+                        <label for="compareDemandSelect">Select Demand Context</label>
+                        <select id="compareDemandSelect">
+                            <option value="">-- Choose Demand --</option>
+                        </select>
+                    </div>
+                    <div class="comparison-quick-actions">
+                        <button type="button" class="btn btn-secondary btn-sm" id="btnQuickCompareTop2">Compare Top 2</button>
+                        <button type="button" class="btn btn-secondary btn-sm" id="btnQuickCompareTop3">Compare Top 3</button>
+                    </div>
+                </div>
+
+                <!-- Candidate Checkbox Selector Grid -->
+                <div id="comparisonCandidateCheckboxes" class="candidate-checkbox-selector" style="display: none;">
+                    <!-- Injected dynamically -->
+                </div>
+            </div>
+
+            <!-- Side-by-Side Comparison Container -->
+            <div id="comparisonTableWrapper" class="comparison-results-wrapper">
+                <div class="empty-state">
+                    <span class="empty-icon">⚖️</span>
+                    <h3>Select Candidates to Compare</h3>
+                    <p>Choose a demand above and check at least two candidates to generate an authoritative side-by-side comparison matrix.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- SCREEN 5: ALLOCATION APPROVAL WORKFLOW     -->
+        <!-- ========================================== -->
+        <section id="screen-allocation-approvals" class="app-screen" aria-labelledby="headingAllocationApprovals">
+            <div class="screen-header">
+                <div>
+                    <h2 id="headingAllocationApprovals">Resource Allocation Management & Approvals</h2>
+                    <p class="screen-subtitle">Serialized state transitions with database-level row locking and capacity safety protection.</p>
+                </div>
+                <div class="header-actions">
+                    <button type="button" class="btn btn-primary" id="btnOpenNewAllocationModal">+ Request Allocation</button>
+                    <button type="button" class="btn btn-secondary" id="btnRefreshAllocations">🔄 Refresh</button>
+                </div>
+            </div>
+
+            <!-- Status Filter Tabs -->
+            <div class="status-filter-pills" role="tablist">
+                <button type="button" class="pill-btn active" data-status="ALL">All Allocations</button>
+                <button type="button" class="pill-btn" data-status="PENDING">Pending Review</button>
+                <button type="button" class="pill-btn" data-status="CONFIRMED">Confirmed</button>
+                <button type="button" class="pill-btn" data-status="REJECTED">Rejected</button>
+                <button type="button" class="pill-btn" data-status="CANCELLED">Cancelled</button>
+            </div>
+
+            <!-- Allocations Table Card -->
+            <div class="card table-card">
+                <div class="card-header">
+                    <div class="table-info">
+                        <h3>Allocation Records</h3>
+                        <span id="allocationsCountDisplay" class="text-sm text-secondary">0 records</span>
+                    </div>
+                </div>
+                <div class="table-responsive" id="allocationsTableContainer">
+                    <div class="loading-state"><div class="spinner"></div><p>Loading resource allocations...</p></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- SCREEN 6: UTILIZATION & SKILL-GAP DASHBOARD -->
+        <!-- ========================================== -->
+        <section id="screen-utilization-dashboard" class="app-screen" aria-labelledby="headingUtilizationDashboard">
+            <div class="screen-header">
+                <div>
+                    <h2 id="headingUtilizationDashboard">Enterprise Utilization & Skill Gap Dashboard</h2>
+                    <p class="screen-subtitle">Real-time organizational capacity utilization and demand-versus-supply skill shortage diagnostics.</p>
+                </div>
+                <div class="header-actions">
+                    <button type="button" class="btn btn-secondary" id="btnRefreshDashboard">🔄 Refresh Metrics</button>
+                </div>
+            </div>
+
+            <!-- KPI Metric Cards -->
+            <div class="metric-cards-grid">
+                <div class="metric-card">
+                    <div class="metric-icon">👥</div>
+                    <div class="metric-info">
+                        <span class="metric-title">Active Headcount</span>
+                        <h3 class="metric-value" id="kpiActiveEmployees">0</h3>
+                        <span class="metric-sub" id="kpiTotalEmployees">0 total employees</span>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon">📋</div>
+                    <div class="metric-info">
+                        <span class="metric-title">Open Project Demands</span>
+                        <h3 class="metric-value" id="kpiOpenDemands">0</h3>
+                        <span class="metric-sub" id="kpiDemandedCapacity">0% required capacity</span>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon">🔒</div>
+                    <div class="metric-info">
+                        <span class="metric-title">Confirmed Allocations</span>
+                        <h3 class="metric-value" id="kpiConfirmedAllocations">0</h3>
+                        <span class="metric-sub" id="kpiPendingAllocations">0 pending approval</span>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon">📊</div>
+                    <div class="metric-info">
+                        <span class="metric-title">Avg Enterprise Utilization</span>
+                        <h3 class="metric-value" id="kpiAvgUtilization">0%</h3>
+                        <span class="metric-sub">Across active employees</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Split Layout: Utilization Table & Skill Gap Analysis -->
+            <div class="grid-layout-2col">
+                <!-- Section A: Employee Capacity Utilization -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Employee Capacity Utilization</h3>
+                        <span class="badge badge-grounded">Active Invariant: &le; 100%</span>
+                    </div>
+                    <div class="card-body scrollable-body" id="utilizationListContainer">
+                        <div class="loading-state"><div class="spinner"></div><p>Calculating employee capacity utilization...</p></div>
+                    </div>
+                </div>
+
+                <!-- Section B: Enterprise Skill Gap Analysis -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Skill Shortage & Gap Analysis</h3>
+                        <span class="badge badge-tool">Demand vs Supply</span>
+                    </div>
+                    <div class="card-body scrollable-body" id="skillGapsListContainer">
+                        <div class="loading-state"><div class="spinner"></div><p>Analyzing enterprise skill gaps...</p></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- SCREEN 7: AI ASSISTANT                     -->
+        <!-- ========================================== -->
+        <section id="screen-ai-assistant" class="app-screen" aria-labelledby="headingAiAssistant">
+            <div class="screen-header">
+                <div>
+                    <h2 id="headingAiAssistant">AI Staffing Agent Assistant</h2>
+                    <p class="screen-subtitle">Local Ollama llama3.2:3b autonomous assistant backed by 6 deterministic Java service tools.</p>
+                </div>
+                <div class="safety-pill">
+                    <span>🔒 Read-Only Safety Enforced</span>
+                </div>
+            </div>
+
+            <div class="ai-assistant-wrapper">
+                <!-- Chat Panel -->
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <div class="chat-header-title">
+                            <span class="llama-icon">🦙</span>
+                            <span>Staffing Agent Conversation</span>
+                            <span class="chat-tools-count">6 Grounded Tools</span>
+                        </div>
+                        <div class="chat-header-meta">
+                            Local Engine: <strong>llama3.2:3b</strong>
+                        </div>
+                    </div>
+
+                    <!-- Messages Stream -->
+                    <div class="chat-messages" id="chatMessages" role="log" aria-live="polite">
+                        <div class="message-bubble assistant">
+                            <div class="avatar ai-avatar">🦙</div>
+                            <div class="message-content">
+                                Hello! I am your AI Staffing Agent connected to your local <strong>llama3.2:3b</strong> model.
+                                I can assist with evaluating project demands, running deterministic candidate matches, analyzing skill gaps, and inspecting employee availability.
+                                <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-secondary);">
+                                    Use the quick prompt chips below or type a query in natural language!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Contextual Quick Prompts Bar -->
+                    <div class="quick-prompts-bar" id="quickPromptsBar" aria-label="Quick Prompt Suggestions">
+                        <!-- Populated dynamically with context chips -->
+                    </div>
+
+                    <!-- Chat Input Area -->
+                    <form class="chat-input-area" id="chatForm" onsubmit="return false;">
+                        <textarea
+                            id="chatInput"
+                            class="chat-input"
+                            placeholder="Ask about candidate recommendations, availability, or allocations..."
+                            rows="1"
+                            aria-label="Ask AI Assistant"
+                        ></textarea>
+                        <button type="submit" id="sendBtn" class="send-btn" aria-label="Send message">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- AI Tools & Context Reference Sidebar -->
+                <div class="ai-sidebar">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>Tool Allowlist</h4>
+                            <span class="badge badge-tool">6 Active</span>
+                        </div>
+                        <div class="card-body">
+                            <ul class="tool-list">
+                                <li>
+                                    <strong>get_demand_candidates</strong>
+                                    <span>Ranks candidates with deterministic scores for a demand.</span>
+                                </li>
+                                <li>
+                                    <strong>search_open_demands</strong>
+                                    <span>Finds open project demands by role or location.</span>
+                                </li>
+                                <li>
+                                    <strong>compare_candidates</strong>
+                                    <span>Side-by-side comparison of candidate profiles.</span>
+                                </li>
+                                <li>
+                                    <strong>explain_missing_skills</strong>
+                                    <span>Identifies unfulfilled mandatory & optional skills.</span>
+                                </li>
+                                <li>
+                                    <strong>get_allocation_status</strong>
+                                    <span>Retrieves active allocation records and audit metadata.</span>
+                                </li>
+                                <li>
+                                    <strong>check_employee_availability</strong>
+                                    <span>Assesses daily capacity & calendar unavailabilities.</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-top: 1rem;">
+                        <div class="card-header">
+                            <h4>Current Workspace Context</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="context-detail" id="aiContextDetail">
+                                <p class="text-sm text-secondary">Navigate to <strong>Resource Ranking</strong> to bind a specific Demand to your assistant's context.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
     </main>
 
+    <!-- Global Scripts -->
     <script src="/js/app.js"></script>
 </body>
 </html>

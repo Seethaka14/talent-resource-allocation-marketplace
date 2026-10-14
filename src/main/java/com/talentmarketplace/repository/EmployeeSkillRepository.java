@@ -17,6 +17,12 @@ public interface EmployeeSkillRepository extends JpaRepository<EmployeeSkill, Lo
     @Query("SELECT es FROM EmployeeSkill es " +
            "JOIN FETCH es.employee " +
            "JOIN FETCH es.skill " +
+           "ORDER BY es.employee.id ASC, es.skill.name ASC")
+    List<EmployeeSkill> findAllWithDetails();
+
+    @Query("SELECT es FROM EmployeeSkill es " +
+           "JOIN FETCH es.employee " +
+           "JOIN FETCH es.skill " +
            "WHERE es.employee.id = :employeeId")
     List<EmployeeSkill> findByEmployeeIdWithDetails(@Param("employeeId") Long employeeId);
 

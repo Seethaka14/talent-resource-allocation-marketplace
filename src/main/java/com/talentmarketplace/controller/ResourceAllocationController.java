@@ -43,6 +43,13 @@ public class ResourceAllocationController {
                 .body(ApiResponse.ok("Resource allocation created successfully", response));
     }
 
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<AllocationResponse>>> getAllAllocations(
+            @org.springframework.web.bind.annotation.RequestParam(required = false) com.talentmarketplace.entity.AllocationStatus status) {
+        List<AllocationResponse> responses = allocationService.getAllAllocations(status);
+        return ResponseEntity.ok(ApiResponse.ok(responses));
+    }
+
     @PostMapping("/{id}/confirm")
     public ResponseEntity<ApiResponse<AllocationResponse>> confirmAllocation(
             @PathVariable Long id,

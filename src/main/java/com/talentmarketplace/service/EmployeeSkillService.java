@@ -19,4 +19,6 @@ public interface EmployeeSkillService {
     void removeSkillFromEmployee(Long employeeId, Long skillId);
 
     List<EmployeeSkillResponse> getEmployeesBySkill(Long skillId);
+
+    List<EmployeeSkillResponse> getAllEmployeeSkills();
 }

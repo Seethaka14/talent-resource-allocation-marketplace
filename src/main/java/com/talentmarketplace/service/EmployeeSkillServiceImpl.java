@@ -155,4 +155,13 @@ public class EmployeeSkillServiceImpl implements EmployeeSkillService {
                 .map(EmployeeSkillResponse::fromEntity)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<EmployeeSkillResponse> getAllEmployeeSkills() {
+        return employeeSkillRepository.findAllWithDetails()
+                .stream()
+                .map(EmployeeSkillResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
 }

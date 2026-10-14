@@ -24,6 +24,19 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
     @Query("SELECT a FROM ResourceAllocation a " +
            "JOIN FETCH a.employee " +
            "JOIN FETCH a.demand " +
+           "ORDER BY a.createdAt DESC")
+    List<ResourceAllocation> findAllWithDetails();
+
+    @Query("SELECT a FROM ResourceAllocation a " +
+           "JOIN FETCH a.employee " +
+           "JOIN FETCH a.demand " +
+           "WHERE a.status = :status " +
+           "ORDER BY a.createdAt DESC")
+    List<ResourceAllocation> findByStatusWithDetails(@Param("status") AllocationStatus status);
+
+    @Query("SELECT a FROM ResourceAllocation a " +
+           "JOIN FETCH a.employee " +
+           "JOIN FETCH a.demand " +
            "WHERE a.id = :id")
     Optional<ResourceAllocation> findByIdWithDetails(@Param("id") Long id);
 

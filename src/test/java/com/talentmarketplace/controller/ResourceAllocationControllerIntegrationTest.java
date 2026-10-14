@@ -196,4 +196,39 @@ class ResourceAllocationControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    @DisplayName("GET /api/allocations: returns all allocations with details and supports status filter")
+    void testGetAllAllocations() throws Exception {
+        CreateAllocationRequest createReq = new CreateAllocationRequest(
+                demand.getId(), employee.getId(), LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 31), 40, "Staffing Coordinator"
+        );
+        mockMvc.perform(post("/api/allocations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createReq)))
+                .andExpect(status().isCreated());
+
+        // Test without status filter
+        mockMvc.perform(get("/api/allocations")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].employeeCode").value("EMP-ALLOC-01"))
+                .andExpect(jsonPath("$.data[0].demandCode").value("DEM-ALLOC-01"));
+
+        // Test with matching status filter
+        mockMvc.perform(get("/api/allocations")
+                        .param("status", "PENDING")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1));
+
+        // Test with non-matching status filter
+        mockMvc.perform(get("/api/allocations")
+                        .param("status", "CONFIRMED")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(0));
+    }
 }

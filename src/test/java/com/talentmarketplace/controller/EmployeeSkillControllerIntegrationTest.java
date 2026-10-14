@@ -266,4 +266,22 @@ class EmployeeSkillControllerIntegrationTest {
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].employeeCode").value("EMP-201"));
     }
+
+    @Test
+    @DisplayName("GET /api/employee-skills: returns all employee skill records across enterprise")
+    void getAllEmployeeSkills() throws Exception {
+        AssignSkillRequest assignReq = new AssignSkillRequest(
+                skillJava.getId(), ProficiencyLevel.ADVANCED, 3.0, LocalDate.now(), "Lead", "Dev"
+        );
+        mockMvc.perform(post("/api/employees/" + employee.getId() + "/skills")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(assignReq)));
+
+        mockMvc.perform(get("/api/employee-skills"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].employeeCode").value("EMP-201"))
+                .andExpect(jsonPath("$.data[0].skillName").value("Java"));
+    }
 }

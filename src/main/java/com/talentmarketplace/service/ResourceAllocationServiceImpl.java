@@ -238,4 +238,15 @@ public class ResourceAllocationServiceImpl implements ResourceAllocationService 
                 .map(AllocationResponse::fromEntity)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AllocationResponse> getAllAllocations(AllocationStatus status) {
+        List<ResourceAllocation> allocations = (status != null)
+                ? allocationRepository.findByStatusWithDetails(status)
+                : allocationRepository.findAllWithDetails();
+        return allocations.stream()
+                .map(AllocationResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
 }

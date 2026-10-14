@@ -81,4 +81,10 @@ public class EmployeeSkillController {
         List<EmployeeSkillResponse> responses = employeeSkillService.getEmployeesBySkill(skillId);
         return ResponseEntity.ok(ApiResponse.ok(responses));
     }
+
+    @GetMapping("/api/employee-skills")
+    public ResponseEntity<ApiResponse<List<EmployeeSkillResponse>>> getAllEmployeeSkills() {
+        List<EmployeeSkillResponse> responses = employeeSkillService.getAllEmployeeSkills();
+        return ResponseEntity.ok(ApiResponse.ok(responses));
+    }
 }
