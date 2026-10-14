@@ -22,9 +22,12 @@ import com.talentmarketplace.dto.request.CreateDemandRequest;
 import com.talentmarketplace.dto.request.DemandSkillRequest;
 import com.talentmarketplace.dto.request.UpdateDemandRequest;
 import com.talentmarketplace.dto.response.ApiResponse;
+import com.talentmarketplace.dto.response.CandidateRecommendationResponse;
+import com.talentmarketplace.dto.response.DemandRecommendationListResponse;
 import com.talentmarketplace.dto.response.DemandResponse;
 import com.talentmarketplace.entity.DemandPriority;
 import com.talentmarketplace.entity.DemandStatus;
+import com.talentmarketplace.service.CandidateRecommendationService;
 import com.talentmarketplace.service.ProjectDemandService;
 
 import jakarta.validation.Valid;
@@ -34,9 +37,12 @@ import jakarta.validation.Valid;
 public class ProjectDemandController {
 
     private final ProjectDemandService demandService;
+    private final CandidateRecommendationService candidateRecommendationService;
 
-    public ProjectDemandController(ProjectDemandService demandService) {
+    public ProjectDemandController(ProjectDemandService demandService,
+                                   CandidateRecommendationService candidateRecommendationService) {
         this.demandService = demandService;
+        this.candidateRecommendationService = candidateRecommendationService;
     }
 
     @PostMapping
@@ -110,5 +116,34 @@ public class ProjectDemandController {
             @PathVariable Long skillId) {
         demandService.removeRequiredSkill(id, skillId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/candidates")
+    public ResponseEntity<ApiResponse<DemandRecommendationListResponse>> getCandidatesForDemand(
+            @PathVariable Long id,
+            @RequestParam(required = false, defaultValue = "false") Boolean eligibleOnly,
+            @RequestParam(required = false) Double minScore,
+            @RequestParam(required = false) Integer limit) {
+        DemandRecommendationListResponse response = candidateRecommendationService.recommendCandidatesForDemand(
+                id, eligibleOnly, minScore, limit
+        );
+        return ResponseEntity.ok(ApiResponse.ok(response));
+    }
+
+    @GetMapping("/{id}/recommendations")
+    public ResponseEntity<ApiResponse<DemandRecommendationListResponse>> getRecommendationsForDemand(
+            @PathVariable Long id,
+            @RequestParam(required = false, defaultValue = "false") Boolean eligibleOnly,
+            @RequestParam(required = false) Double minScore,
+            @RequestParam(required = false) Integer limit) {
+        return getCandidatesForDemand(id, eligibleOnly, minScore, limit);
+    }
+
+    @GetMapping("/{id}/candidates/{employeeId}")
+    public ResponseEntity<ApiResponse<CandidateRecommendationResponse>> evaluateCandidateForDemand(
+            @PathVariable Long id,
+            @PathVariable Long employeeId) {
+        CandidateRecommendationResponse response = candidateRecommendationService.evaluateCandidateForDemand(id, employeeId);
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 }

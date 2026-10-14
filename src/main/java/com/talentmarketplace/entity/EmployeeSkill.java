@@ -97,6 +97,11 @@ public class EmployeeSkill {
     }
 
     public EmployeeSkill(Employee employee, Skill skill, ProficiencyLevel proficiencyLevel,
+                         Double yearsOfExperience) {
+        this(employee, skill, proficiencyLevel, yearsOfExperience, LocalDate.now(), null, null);
+    }
+
+    public EmployeeSkill(Employee employee, Skill skill, ProficiencyLevel proficiencyLevel,
                          Double yearsOfExperience, LocalDate lastValidatedAt,
                          String validatedBy, String evidenceNotes) {
         this.employee = employee;

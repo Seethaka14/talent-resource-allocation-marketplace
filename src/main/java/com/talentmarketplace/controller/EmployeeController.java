@@ -1,8 +1,10 @@
 package com.talentmarketplace.controller;
 
 import java.net.URI;
+import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,8 +20,10 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import com.talentmarketplace.dto.request.CreateEmployeeRequest;
 import com.talentmarketplace.dto.request.UpdateEmployeeRequest;
 import com.talentmarketplace.dto.response.ApiResponse;
+import com.talentmarketplace.dto.response.AvailabilityAssessmentResponse;
 import com.talentmarketplace.dto.response.EmployeeResponse;
 import com.talentmarketplace.entity.EmploymentStatus;
+import com.talentmarketplace.service.AvailabilityService;
 import com.talentmarketplace.service.EmployeeService;
 
 import jakarta.validation.Valid;
@@ -29,9 +33,12 @@ import jakarta.validation.Valid;
 public class EmployeeController {
 
     private final EmployeeService employeeService;
+    private final AvailabilityService availabilityService;
 
-    public EmployeeController(EmployeeService employeeService) {
+    public EmployeeController(EmployeeService employeeService,
+                              AvailabilityService availabilityService) {
         this.employeeService = employeeService;
+        this.availabilityService = availabilityService;
     }
 
     @PostMapping
@@ -81,5 +88,17 @@ public class EmployeeController {
     public ResponseEntity<Void> deleteEmployee(@PathVariable Long id) {
         employeeService.deleteEmployee(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{id}/availability")
+    public ResponseEntity<ApiResponse<AvailabilityAssessmentResponse>> getEmployeeAvailability(
+            @PathVariable Long id,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false, defaultValue = "100") Integer allocationPercent) {
+        AvailabilityAssessmentResponse response = availabilityService.assessEmployeeAvailability(
+                id, startDate, endDate, allocationPercent
+        );
+        return ResponseEntity.ok(ApiResponse.ok(response));
     }
 }
