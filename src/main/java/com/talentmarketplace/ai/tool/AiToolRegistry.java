@@ -58,7 +58,8 @@ public class AiToolRegistry {
         try {
             Object result = tool.execute(arguments != null ? arguments : Collections.emptyMap());
             long duration = System.currentTimeMillis() - startTime;
-            ToolInvocationSummary summary = ToolInvocationSummary.successful(normalizedName, arguments, duration);
+            boolean usable = isUsableEvidence(result);
+            ToolInvocationSummary summary = ToolInvocationSummary.successful(normalizedName, arguments, duration, usable);
             return new ToolExecutionResult(result, summary, true);
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
@@ -66,6 +67,28 @@ public class AiToolRegistry {
             ToolInvocationSummary summary = ToolInvocationSummary.failure(normalizedName, arguments, duration, e.getMessage());
             return new ToolExecutionResult(Map.of("error", e.getMessage()), summary, false);
         }
+    }
+
+    private boolean isUsableEvidence(Object result) {
+        if (result == null) {
+            return false;
+        }
+        if (result instanceof java.util.Collection<?> col) {
+            return !col.isEmpty();
+        }
+        if (result instanceof Map<?, ?> map) {
+            if (map.isEmpty() || map.containsKey("error")) {
+                return false;
+            }
+            if (map.containsKey("candidates") && map.get("candidates") instanceof java.util.Collection<?> cList) {
+                return !cList.isEmpty();
+            }
+            return true;
+        }
+        if (result instanceof String str) {
+            return !str.isBlank();
+        }
+        return true;
     }
 
     public Map<String, AiTool> getAllowedTools() {

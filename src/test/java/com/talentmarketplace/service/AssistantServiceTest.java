@@ -180,4 +180,68 @@ class AssistantServiceTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Chat message must not be blank");
     }
+
+    @Test
+    @DisplayName("chat: failed tool invocation alone does NOT mark response as grounded")
+    void chat_FailedToolInvocation_NotGrounded() {
+        when(ollamaClient.isAvailable()).thenReturn(true);
+
+        OllamaToolCall toolCall = new OllamaToolCall("call_fail", new OllamaFunctionCall("get_demand_candidates", Map.of("demandId", 999)));
+        OllamaChatMessage assistantMsg1 = OllamaChatMessage.assistantWithToolCalls("", List.of(toolCall));
+        OllamaChatResponse chatResp1 = new OllamaChatResponse("llama3.2:3b", assistantMsg1, false);
+
+        ToolInvocationSummary failSummary = ToolInvocationSummary.failure("get_demand_candidates", Map.of("demandId", 999), 15, "Demand 999 not found");
+        when(toolRegistry.executeTool("get_demand_candidates", Map.of("demandId", 999)))
+                .thenReturn(new AiToolRegistry.ToolExecutionResult(Map.of("error", "Demand 999 not found"), failSummary, false));
+
+        OllamaChatMessage assistantMsg2 = OllamaChatMessage.assistant(
+                "I could not retrieve candidates because demand 999 does not exist."
+        );
+        OllamaChatResponse chatResp2 = new OllamaChatResponse("llama3.2:3b", assistantMsg2, true);
+
+        when(ollamaClient.chat(any(OllamaChatRequest.class)))
+                .thenReturn(chatResp1)
+                .thenReturn(chatResp2);
+
+        AssistantChatRequest request = new AssistantChatRequest("Find candidates for demand 999");
+        AssistantChatResponse response = assistantService.chat(request);
+
+        assertThat(response).isNotNull();
+        assertThat(response.isGrounded()).isFalse();
+        assertThat(response.getToolsInvoked()).hasSize(1);
+        assertThat(response.getToolsInvoked().get(0).isSuccess()).isFalse();
+        assertThat(response.getToolsInvoked().get(0).isUsableEvidence()).isFalse();
+    }
+
+    @Test
+    @DisplayName("chat: successful tool invocation with empty data does NOT mark response as grounded")
+    void chat_EmptyToolResults_NotGrounded() {
+        when(ollamaClient.isAvailable()).thenReturn(true);
+
+        OllamaToolCall toolCall = new OllamaToolCall("call_empty", new OllamaFunctionCall("search_open_demands", Collections.emptyMap()));
+        OllamaChatMessage assistantMsg1 = OllamaChatMessage.assistantWithToolCalls("", List.of(toolCall));
+        OllamaChatResponse chatResp1 = new OllamaChatResponse("llama3.2:3b", assistantMsg1, false);
+
+        ToolInvocationSummary emptySummary = ToolInvocationSummary.successful("search_open_demands", Collections.emptyMap(), 22, false);
+        when(toolRegistry.executeTool("search_open_demands", Collections.emptyMap()))
+                .thenReturn(new AiToolRegistry.ToolExecutionResult(Collections.emptyList(), emptySummary, true));
+
+        OllamaChatMessage assistantMsg2 = OllamaChatMessage.assistant(
+                "There are currently no open demands in the system."
+        );
+        OllamaChatResponse chatResp2 = new OllamaChatResponse("llama3.2:3b", assistantMsg2, true);
+
+        when(ollamaClient.chat(any(OllamaChatRequest.class)))
+                .thenReturn(chatResp1)
+                .thenReturn(chatResp2);
+
+        AssistantChatRequest request = new AssistantChatRequest("Show me open demands");
+        AssistantChatResponse response = assistantService.chat(request);
+
+        assertThat(response).isNotNull();
+        assertThat(response.isGrounded()).isFalse();
+        assertThat(response.getToolsInvoked()).hasSize(1);
+        assertThat(response.getToolsInvoked().get(0).isSuccess()).isTrue();
+        assertThat(response.getToolsInvoked().get(0).isUsableEvidence()).isFalse();
+    }
 }

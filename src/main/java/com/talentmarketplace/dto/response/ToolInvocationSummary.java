@@ -9,25 +9,36 @@ public class ToolInvocationSummary {
     private long executionDurationMs;
     private boolean success;
     private String errorMessage;
+    private boolean usableEvidence;
 
     public ToolInvocationSummary() {
     }
 
     public ToolInvocationSummary(String toolName, Map<String, Object> arguments,
                                  long executionDurationMs, boolean success, String errorMessage) {
+        this(toolName, arguments, executionDurationMs, success, errorMessage, success);
+    }
+
+    public ToolInvocationSummary(String toolName, Map<String, Object> arguments,
+                                 long executionDurationMs, boolean success, String errorMessage, boolean usableEvidence) {
         this.toolName = toolName;
         this.arguments = arguments;
         this.executionDurationMs = executionDurationMs;
         this.success = success;
         this.errorMessage = errorMessage;
+        this.usableEvidence = usableEvidence;
     }
 
     public static ToolInvocationSummary successful(String toolName, Map<String, Object> arguments, long durationMs) {
-        return new ToolInvocationSummary(toolName, arguments, durationMs, true, null);
+        return new ToolInvocationSummary(toolName, arguments, durationMs, true, null, true);
+    }
+
+    public static ToolInvocationSummary successful(String toolName, Map<String, Object> arguments, long durationMs, boolean usableEvidence) {
+        return new ToolInvocationSummary(toolName, arguments, durationMs, true, null, usableEvidence);
     }
 
     public static ToolInvocationSummary failure(String toolName, Map<String, Object> arguments, long durationMs, String error) {
-        return new ToolInvocationSummary(toolName, arguments, durationMs, false, error);
+        return new ToolInvocationSummary(toolName, arguments, durationMs, false, error, false);
     }
 
     public String getToolName() {
@@ -68,5 +79,13 @@ public class ToolInvocationSummary {
 
     public void setErrorMessage(String errorMessage) {
         this.errorMessage = errorMessage;
+    }
+
+    public boolean isUsableEvidence() {
+        return usableEvidence;
+    }
+
+    public void setUsableEvidence(boolean usableEvidence) {
+        this.usableEvidence = usableEvidence;
     }
 }

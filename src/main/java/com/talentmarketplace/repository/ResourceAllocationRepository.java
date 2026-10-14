@@ -66,4 +66,13 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
            "WHERE a.demand.id = :demandId AND " +
            "a.status = com.talentmarketplace.entity.AllocationStatus.CONFIRMED")
     Integer sumConfirmedAllocationsForDemand(@Param("demandId") Long demandId);
+
+    @Query("SELECT a FROM ResourceAllocation a " +
+           "JOIN FETCH a.employee e " +
+           "WHERE a.status = com.talentmarketplace.entity.AllocationStatus.CONFIRMED AND " +
+           "a.startDate <= :endDate AND a.endDate >= :startDate " +
+           "ORDER BY a.employee.id ASC, a.startDate ASC")
+    List<ResourceAllocation> findAllOverlappingConfirmedAllocations(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 }

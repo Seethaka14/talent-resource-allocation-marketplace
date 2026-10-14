@@ -468,6 +468,26 @@
                 </div>
             </div>
 
+            <!-- Date Window Filter Bar -->
+            <div class="filter-bar" style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap; margin-bottom:1.5rem; background:rgba(30,41,59,0.5); padding:0.85rem 1.25rem; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                    <label for="utilFilterStartDate" style="font-size:0.85rem; font-weight:600; color:var(--text-secondary);">Window Start:</label>
+                    <input type="date" id="utilFilterStartDate" class="form-input" style="padding:0.35rem 0.6rem; font-size:0.85rem; width:auto;">
+                </div>
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                    <label for="utilFilterEndDate" style="font-size:0.85rem; font-weight:600; color:var(--text-secondary);">Window End:</label>
+                    <input type="date" id="utilFilterEndDate" class="form-input" style="padding:0.35rem 0.6rem; font-size:0.85rem; width:auto;">
+                </div>
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                    <label for="utilFilterDept" style="font-size:0.85rem; font-weight:600; color:var(--text-secondary);">Department:</label>
+                    <select id="utilFilterDept" class="form-input" style="padding:0.35rem 0.6rem; font-size:0.85rem; width:auto;">
+                        <option value="">All Departments</option>
+                    </select>
+                </div>
+                <button type="button" class="btn btn-primary" id="btnApplyUtilFilter" style="padding:0.4rem 0.9rem; font-size:0.85rem;">Apply Window</button>
+                <span id="utilWindowLabel" style="font-size:0.8rem; color:var(--text-muted); margin-left:auto;">Evaluation Window: 30 days</span>
+            </div>
+
             <!-- KPI Metric Cards -->
             <div class="metric-cards-grid">
                 <div class="metric-card">
@@ -500,9 +520,9 @@
                 <div class="metric-card">
                     <div class="metric-icon">📊</div>
                     <div class="metric-info">
-                        <span class="metric-title">Avg Enterprise Utilization</span>
+                        <span class="metric-title">Avg Window Utilization</span>
                         <h3 class="metric-value" id="kpiAvgUtilization">0%</h3>
-                        <span class="metric-sub">Across active employees</span>
+                        <span class="metric-sub">Peak / Time-Weighted Avg</span>
                     </div>
                 </div>
             </div>
@@ -512,8 +532,11 @@
                 <!-- Section A: Employee Capacity Utilization -->
                 <div class="card">
                     <div class="card-header">
-                        <h3>Employee Capacity Utilization</h3>
-                        <span class="badge badge-grounded">Active Invariant: &le; 100%</span>
+                        <div>
+                            <h3 style="margin:0;">Employee Capacity Utilization</h3>
+                            <p style="font-size:0.75rem; color:var(--text-muted); margin:0.2rem 0 0 0;">Peak simultaneous commitment vs. time-weighted average across window</p>
+                        </div>
+                        <span class="badge badge-grounded">Date-Bounded Window</span>
                     </div>
                     <div class="card-body scrollable-body" id="utilizationListContainer">
                         <div class="loading-state"><div class="spinner"></div><p>Calculating employee capacity utilization...</p></div>

@@ -29,4 +29,10 @@ public interface EmployeeUnavailabilityRepository extends JpaRepository<Employee
             @Param("excludeId") Long excludeId,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT u FROM EmployeeUnavailability u JOIN FETCH u.employee e WHERE " +
+           "u.startDate <= :endDate AND u.endDate >= :startDate ORDER BY u.employee.id ASC, u.startDate ASC")
+    List<EmployeeUnavailability> findAllOverlappingUnavailabilities(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
 }

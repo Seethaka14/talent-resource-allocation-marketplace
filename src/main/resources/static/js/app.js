@@ -331,6 +331,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Screen 6 Dashboard
         btnRefreshDashboard.addEventListener('click', loadUtilizationDashboard);
+        const btnApplyUtilFilter = document.getElementById('btnApplyUtilFilter');
+        if (btnApplyUtilFilter) {
+            btnApplyUtilFilter.addEventListener('click', loadUtilizationDashboard);
+        }
 
         // Screen 7 AI Assistant
         sendBtn.addEventListener('click', handleAiSend);
@@ -736,9 +740,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                             <!-- Score breakdown tags -->
                             <div class="score-breakdown-tags">
-                                <span class="score-tag" title="Skill Match Score">🎯 Skills: <strong>${c.skillScore.toFixed(1)}/50</strong></span>
-                                <span class="score-tag" title="Availability Score">📅 Availability: <strong>${c.availabilityScore.toFixed(1)}/30</strong></span>
-                                <span class="score-tag" title="Location Alignment Score">📍 Location: <strong>${c.locationScore.toFixed(1)}/20</strong></span>
+                                <span class="score-tag" title="Skill Match Score">🎯 Skills: <strong>${c.skillScore.toFixed(1)}/70</strong></span>
+                                <span class="score-tag" title="Availability Score">📅 Availability: <strong>${c.availabilityScore.toFixed(1)}/20</strong></span>
+                                <span class="score-tag" title="Location Alignment Score">📍 Location: <strong>${c.locationScore.toFixed(1)}/10</strong></span>
                             </div>
 
                             <!-- Matched vs Missing Skills -->
@@ -972,9 +976,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${candidates.map(c => `
                             <td>
                                 <div style="display:flex; flex-direction:column; gap:0.25rem;">
-                                    <div>🎯 Skills: <strong>${c.skillScore.toFixed(1)}</strong> / 50</div>
-                                    <div>📅 Availability: <strong>${c.availabilityScore.toFixed(1)}</strong> / 30</div>
-                                    <div>📍 Location: <strong>${c.locationScore.toFixed(1)}</strong> / 20</div>
+                                    <div>🎯 Skills: <strong>${c.skillScore.toFixed(1)}</strong> / 70</div>
+                                    <div>📅 Availability: <strong>${c.availabilityScore.toFixed(1)}</strong> / 20</div>
+                                    <div>📍 Location: <strong>${c.locationScore.toFixed(1)}</strong> / 10</div>
                                 </div>
                             </td>
                         `).join('')}
@@ -1447,158 +1451,193 @@ document.addEventListener('DOMContentLoaded', () => {
     // SCREEN 6: UTILIZATION AND SKILL-GAP DASHBOARD
     // ==========================================================
     async function loadUtilizationDashboard() {
-        utilizationListContainer.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Calculating capacity utilization...</p></div>';
-        skillGapsListContainer.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Analyzing skill shortages...</p></div>';
+        utilizationListContainer.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Calculating date-bounded capacity utilization via analytics report...</p></div>';
+        skillGapsListContainer.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Analyzing skill shortages via analytics report...</p></div>';
+
+        // 1. Initialize Date Range Filters if empty
+        const utilStartDateInput = document.getElementById('utilFilterStartDate');
+        const utilEndDateInput = document.getElementById('utilFilterEndDate');
+        const utilDeptInput = document.getElementById('utilFilterDept');
+        const utilWindowLabel = document.getElementById('utilWindowLabel');
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+
+        if (utilStartDateInput && !utilStartDateInput.value) {
+            utilStartDateInput.value = `${year}-${month}-01`;
+        }
+        if (utilEndDateInput && !utilEndDateInput.value) {
+            const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
+            utilEndDateInput.value = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+        }
+
+        const startDate = utilStartDateInput ? utilStartDateInput.value : `${year}-${month}-01`;
+        const endDate = utilEndDateInput ? utilEndDateInput.value : `${year}-${month}-28`;
+        const selectedDept = utilDeptInput ? utilDeptInput.value : '';
 
         try {
-            const [empRes, allocRes, demRes, empSkillsRes, skillsRes] = await Promise.all([
-                fetch('/api/employees'),
+            // Fetch analytics reports in parallel
+            const utilQuery = `/api/analytics/reports/utilization-by-employee-department?startDate=${startDate}&endDate=${endDate}${selectedDept ? `&department=${encodeURIComponent(selectedDept)}` : ''}`;
+            const [utilRes, openDemRes, gapsRes, allocRes, empRes] = await Promise.all([
+                fetch(utilQuery),
+                fetch('/api/analytics/reports/open-demands-by-role-priority'),
+                fetch('/api/analytics/reports/skill-gaps-by-category'),
                 fetch('/api/allocations'),
-                fetch('/api/demands'),
-                fetch('/api/employee-skills'),
-                fetch('/api/skills')
+                fetch('/api/employees')
             ]);
 
-            const employees = (await empRes.json()).data || [];
-            const allocations = (await allocRes.json()).data || [];
-            const demands = (await demRes.json()).data || [];
-            const empSkills = (await empSkillsRes.json()).data || [];
-            const skills = (await skillsRes.json()).data || [];
+            const utilJson = await utilRes.json();
+            const openDemJson = await openDemRes.json();
+            const gapsJson = await gapsRes.json();
+            const allocJson = await allocRes.json();
+            const empJson = await empRes.json();
 
-            state.employees = employees;
-            state.allocations = allocations;
-            state.demands = demands;
-            state.employeeSkills = empSkills;
-            state.skills = skills;
+            if (!utilJson.success) {
+                throw new Error(utilJson.message || 'Failed to calculate utilization');
+            }
 
-            // 1. Calculate KPI Metrics
-            const activeEmps = employees.filter(e => e.employmentStatus === 'ACTIVE');
-            const openDemands = demands.filter(d => d.status === 'OPEN');
-            const confirmedAllocs = allocations.filter(a => a.status === 'CONFIRMED');
-            const pendingAllocs = allocations.filter(a => a.status === 'PENDING');
+            const utilData = utilJson.data || {};
+            const openDemData = openDemJson.data || {};
+            const gapsData = gapsJson.data || {};
+            const allAllocations = allocJson.data || [];
+            const allEmployees = empJson.data || [];
 
-            kpiActiveEmployees.textContent = activeEmps.length;
-            kpiTotalEmployees.textContent = `${employees.length} total headcount`;
-            kpiOpenDemands.textContent = openDemands.length;
+            // Populate departments dropdown if not populated
+            if (utilDeptInput && utilDeptInput.options.length <= 1) {
+                const depts = [...new Set(allEmployees.map(e => e.department).filter(Boolean))].sort();
+                depts.forEach(d => {
+                    const opt = document.createElement('option');
+                    opt.value = d;
+                    opt.textContent = d;
+                    utilDeptInput.appendChild(opt);
+                });
+            }
 
-            const totalDemandedCap = openDemands.reduce((sum, d) => sum + (d.allocationPercent || 0), 0);
-            kpiDemandedCapacity.textContent = `${totalDemandedCap}% total capacity required`;
+            // Update evaluation window label
+            if (utilWindowLabel && utilData.windowDays) {
+                utilWindowLabel.textContent = `Evaluation Window: ${utilData.windowDays} days (${startDate} to ${endDate})`;
+            }
 
-            kpiConfirmedAllocations.textContent = confirmedAllocs.length;
+            // 1. Update KPI Metric Cards
+            const confirmedAllocsInWindow = allAllocations.filter(a => a.status === 'CONFIRMED' && a.startDate <= endDate && a.endDate >= startDate);
+            const pendingAllocs = allAllocations.filter(a => a.status === 'PENDING');
+
+            kpiActiveEmployees.textContent = utilData.totalEmployees || 0;
+            kpiTotalEmployees.textContent = `${allEmployees.length} total headcount (${utilData.totalEmployees || 0} active)`;
+
+            kpiOpenDemands.textContent = openDemData.totalOpenDemands || 0;
+            kpiDemandedCapacity.textContent = `${openDemData.totalRequestedCapacityPercent || 0}% total requested capacity`;
+
+            kpiConfirmedAllocations.textContent = confirmedAllocsInWindow.length;
             kpiPendingAllocations.textContent = `${pendingAllocs.length} pending review`;
 
-            // Map confirmed allocations by employeeId
-            const confirmedByEmp = {};
-            confirmedAllocs.forEach(a => {
-                if (!confirmedByEmp[a.employeeId]) confirmedByEmp[a.employeeId] = 0;
-                confirmedByEmp[a.employeeId] += a.allocationPercent;
-            });
+            kpiAvgUtilization.textContent = `${(utilData.averagePeakUtilizationPercent || 0).toFixed(1)}% Peak`;
 
-            // Calculate average utilization across active employees
-            let totalUtilSum = 0;
-            activeEmps.forEach(e => {
-                const committed = confirmedByEmp[e.id] || 0;
-                totalUtilSum += Math.min(100, committed);
-            });
-            const avgUtil = activeEmps.length > 0 ? (totalUtilSum / activeEmps.length).toFixed(1) : '0';
-            kpiAvgUtilization.textContent = `${avgUtil}%`;
+            // 2. Render Employee Capacity Utilization List
+            const employeeDetails = utilData.employeeDetails || [];
+            if (employeeDetails.length === 0) {
+                utilizationListContainer.innerHTML = '<div class="empty-state"><p>No active employees found matching the criteria.</p></div>';
+            } else {
+                utilizationListContainer.innerHTML = employeeDetails.map(emp => {
+                    const peak = emp.peakSimultaneousAllocationPercent || 0;
+                    const peakUtil = emp.peakUtilizationPercent || 0;
+                    const timeWeighted = emp.timeWeightedAverageUtilizationPercent || 0;
+                    const maxCap = emp.maxCapacityPercent || 100;
+                    const allocCount = emp.aggregateConfirmedAllocationsCount || 0;
 
-            // 2. Render Capacity Utilization List
-            utilizationListContainer.innerHTML = activeEmps.map(emp => {
-                const committed = confirmedByEmp[emp.id] || 0;
-                const maxCap = emp.maxCapacityPercent || 100;
-                const remaining = Math.max(0, maxCap - committed);
-                const fillClass = committed > 100 ? 'danger' : committed >= 80 ? 'committed' : 'normal';
+                    const fillClass = peakUtil > 100 ? 'danger' : peakUtil >= 80 ? 'committed' : 'normal';
 
-                return `
-                    <div style="background:rgba(30,41,59,0.5); border:1px solid var(--border-color); border-radius:var(--radius-sm); padding:0.85rem; margin-bottom:0.75rem;">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <div>
-                                <strong style="color:var(--text-primary); font-size:0.9rem;">${escapeHtml(emp.name)}</strong>
-                                <span style="font-size:0.75rem; color:var(--text-secondary); margin-left:0.4rem;">(${escapeHtml(emp.employeeCode)} • ${escapeHtml(emp.department)})</span>
+                    return `
+                        <div style="background:rgba(30,41,59,0.5); border:1px solid var(--border-color); border-radius:var(--radius-sm); padding:0.85rem; margin-bottom:0.75rem;">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.5rem;">
+                                <div>
+                                    <strong style="color:var(--text-primary); font-size:0.9rem;">${escapeHtml(emp.employeeName)}</strong>
+                                    <span style="font-size:0.75rem; color:var(--text-secondary); margin-left:0.4rem;">(${escapeHtml(emp.employeeCode)} • ${escapeHtml(emp.department)})</span>
+                                </div>
+                                <div style="display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap;">
+                                    <span class="badge ${fillClass === 'danger' ? 'badge-danger' : fillClass === 'committed' ? 'badge-warning' : 'badge-tool'}" title="Maximum simultaneous commitment on any single day within window">
+                                        🎯 ${peak}% Peak (${peakUtil}% of cap)
+                                    </span>
+                                    <span class="badge badge-secondary" title="Day-weighted average allocation across entire window">
+                                        ⏱️ ${timeWeighted}% Avg
+                                    </span>
+                                    <span class="badge badge-grounded">
+                                        ${allocCount} confirmed
+                                    </span>
+                                </div>
                             </div>
-                            <span class="badge ${fillClass === 'danger' ? 'badge-danger' : fillClass === 'committed' ? 'badge-warning' : 'badge-tool'}">
-                                ${committed}% Committed (${remaining}% Free)
-                            </span>
+                            <div class="progress-bar-container" style="margin-top:0.6rem;">
+                                <div class="progress-bar-fill ${fillClass}" style="width: ${Math.min(100, peakUtil)}%;"></div>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:var(--text-muted); margin-top:0.3rem;">
+                                <span>Configured Max: ${maxCap}%</span>
+                                <span>${emp.hasConfirmedAllocations ? `${allocCount} active allocation(s) in window` : '0 allocations in window'}</span>
+                            </div>
                         </div>
-                        <div class="progress-bar-container">
-                            <div class="progress-bar-fill ${fillClass}" style="width: ${Math.min(100, (committed / maxCap) * 100)}%;"></div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+                    `;
+                }).join('');
+            }
 
             // 3. Render Enterprise Skill Shortage Analysis
-            // Calculate demanded skills across open demands
-            const demandSkillCounts = {};
-            openDemands.forEach(d => {
-                (d.requiredSkills || []).forEach(rs => {
-                    const skillName = rs.skillName;
-                    if (!demandSkillCounts[skillName]) {
-                        demandSkillCounts[skillName] = {
-                            name: skillName,
-                            demandsCount: 0,
-                            mandatoryCount: 0,
-                            demandsList: []
-                        };
-                    }
-                    demandSkillCounts[skillName].demandsCount++;
-                    if (rs.mandatory) demandSkillCounts[skillName].mandatoryCount++;
-                    demandSkillCounts[skillName].demandsList.push(`${d.role} (${d.demandCode})`);
+            const categoryGaps = gapsData.categoryGaps || [];
+            const allSkillRows = [];
+            categoryGaps.forEach(cg => {
+                (cg.skillGaps || []).forEach(sg => {
+                    allSkillRows.push({
+                        ...sg,
+                        category: cg.category
+                    });
                 });
             });
 
-            // Calculate enterprise supply of skills (employees who have the skill at INTERMEDIATE or ADVANCED)
-            const supplySkillCounts = {};
-            empSkills.forEach(es => {
-                if (es.proficiencyLevel === 'INTERMEDIATE' || es.proficiencyLevel === 'ADVANCED') {
-                    supplySkillCounts[es.skillName] = (supplySkillCounts[es.skillName] || 0) + 1;
-                }
-            });
+            allSkillRows.sort((a, b) => b.deficit - a.deficit || b.demandCount - a.demandCount);
 
-            const skillGapRows = Object.values(demandSkillCounts).sort((a, b) => b.demandsCount - a.demandsCount);
-
-            if (skillGapRows.length === 0) {
+            if (allSkillRows.length === 0) {
                 skillGapsListContainer.innerHTML = '<div class="empty-state"><p>No skill shortages detected across current demands.</p></div>';
-                return;
+            } else {
+                skillGapsListContainer.innerHTML = `
+                    <div style="margin-bottom:0.75rem; display:flex; justify-content:space-between; align-items:center; font-size:0.8rem; color:var(--text-secondary);">
+                        <span>Categories with Deficit: <strong>${gapsData.categoriesWithGapsCount || 0}</strong> / ${gapsData.totalCategories || 0}</span>
+                        <span>Total Unmet Demand Slots: <strong>${gapsData.totalUnmetSkillDemandSlots || 0}</strong></span>
+                    </div>
+                    <table class="standard-table">
+                        <thead>
+                            <tr>
+                                <th>Demanded Skill</th>
+                                <th>Category</th>
+                                <th>Demands</th>
+                                <th>Qualified Supply</th>
+                                <th>Deficit Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${allSkillRows.map(row => {
+                                const isCritical = row.deficit > 0 && row.mandatoryDemandCount > 0;
+                                const isModerate = row.deficit > 0 && !isCritical;
+                                const statusBadge = isCritical ? `<span class="badge badge-danger">🚨 DEFICIT: -${row.deficit}</span>` :
+                                                    isModerate ? `<span class="badge badge-warning">⚠️ DEFICIT: -${row.deficit}</span>` :
+                                                    '<span class="badge badge-tool">✅ ADEQUATE</span>';
+                                return `
+                                    <tr>
+                                        <td>
+                                            <strong>${escapeHtml(row.skillName)}</strong>
+                                            <div style="font-size:0.7rem; color:var(--text-muted);">Min: ${row.minimumProficiency} • ${row.mandatoryDemandCount} mandatory</div>
+                                        </td>
+                                        <td><span class="badge badge-secondary">${escapeHtml(row.category)}</span></td>
+                                        <td>${row.demandCount} demand${row.demandCount === 1 ? '' : 's'}</td>
+                                        <td><strong>${row.qualifiedResourceCount}</strong> qualified</td>
+                                        <td>${statusBadge}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                `;
             }
-
-            skillGapsListContainer.innerHTML = `
-                <table class="standard-table">
-                    <thead>
-                        <tr>
-                            <th>Demanded Skill</th>
-                            <th>Demands</th>
-                            <th>Qualified Supply</th>
-                            <th>Shortage Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${skillGapRows.map(row => {
-                            const supply = supplySkillCounts[row.name] || 0;
-                            const isCritical = supply === 0 || (row.mandatoryCount > 0 && supply < row.demandsCount);
-                            const isModerate = !isCritical && supply <= row.demandsCount;
-                            const statusBadge = isCritical ? '<span class="badge badge-danger">🚨 CRITICAL SHORTAGE</span>' :
-                                                isModerate ? '<span class="badge badge-warning">⚠️ MODERATE GAP</span>' :
-                                                '<span class="badge badge-tool">✅ ADEQUATE SUPPLY</span>';
-                            return `
-                                <tr>
-                                    <td>
-                                        <strong>${escapeHtml(row.name)}</strong>
-                                        <div style="font-size:0.7rem; color:var(--text-muted);">${row.mandatoryCount} mandatory requirement${row.mandatoryCount === 1 ? '' : 's'}</div>
-                                    </td>
-                                    <td>${row.demandsCount} demand${row.demandsCount === 1 ? '' : 's'}</td>
-                                    <td><strong>${supply}</strong> qualified</td>
-                                    <td>${statusBadge}</td>
-                                </tr>
-                            `;
-                        }).join('')}
-                    </tbody>
-                </table>
-            `;
         } catch (e) {
-            utilizationListContainer.innerHTML = `<div class="error-banner">Error: ${escapeHtml(e.message)}</div>`;
-            skillGapsListContainer.innerHTML = `<div class="error-banner">Error: ${escapeHtml(e.message)}</div>`;
+            utilizationListContainer.innerHTML = `<div class="error-banner">Error calculating utilization: ${escapeHtml(e.message)}</div>`;
+            skillGapsListContainer.innerHTML = `<div class="error-banner">Error analyzing skill gaps: ${escapeHtml(e.message)}</div>`;
         }
     }
 
