@@ -20,9 +20,9 @@ This document provides a comprehensive visual verification guide for the **AI-Dr
 | 2 | Employee Skills Matrix | `docs/screenshots/02_employee_skills_matrix.png` | `GET /api/employees`, `GET /api/skills` | **Captured & Verified** |
 | 3 | Candidate Ranking & Score Breakdown | `docs/screenshots/03_candidate_ranking_breakdown.png` | `GET /api/demands/53/candidates` | **Captured & Verified** |
 | 4 | Candidate Comparison Matrix | `docs/screenshots/04_candidate_comparison.png` | `GET /api/demands/53/candidates` | **Captured & Verified** |
-| 5 | Allocation Approval Workflow | `docs/screenshots/05_allocation_approval_workflow.png` | `POST /api/allocations`, `POST /api/allocations/{id}/confirm` | Pending Manual Capture |
-| 6 | Utilization Dashboard (Date Window) | `docs/screenshots/06_utilization_dashboard_window.png` | `GET /api/analytics/reports/utilization-by-employee-department` | Pending Manual Capture |
-| 7 | AI Assistant with Tool Grounding | `docs/screenshots/07_ai_assistant_tool_grounding.png` | `POST /api/assistant/chat` | Pending Manual Capture |
+| 5 | Allocation Approval Workflow | `docs/screenshots/05_allocation_approval_workflow.png` | `POST /api/allocations`, `POST /api/allocations/{id}/confirm` | **Captured & Verified** |
+| 6 | Utilization Dashboard (Date Window) | `docs/screenshots/06_utilization_dashboard_window.png` | `GET /api/analytics/reports/utilization-by-employee-department` | **Captured & Verified** |
+| 7 | AI Assistant with Tool Grounding | `docs/screenshots/07_ai_assistant_tool_grounding.png` | `POST /api/assistant/chat` | **Captured & Verified** |
 | 8 | SQL Analytics Reports Dashboard | `docs/screenshots/08_sql_analytics_reports.png` | `GET /api/analytics/reports/*` | Pending Manual Capture |
 | 9 | Validation & Error States | `docs/screenshots/09_validation_error_states.png` | Form validation & AI security rejection | Pending Manual Capture |
 
