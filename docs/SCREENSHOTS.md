@@ -16,10 +16,10 @@ This document provides a comprehensive visual verification guide for the **AI-Dr
 
 | # | Screen Description | Target File Path | Backing REST Endpoint | Verification Status |
 |---|-------------------|------------------|----------------------|:-------------------:|
-| 1 | Demand Intake / Management | `docs/screenshots/01_demand_intake.png` | `GET /api/demands` | Pending Manual Capture |
-| 2 | Employee Skills Matrix | `docs/screenshots/02_employee_skills_matrix.png` | `GET /api/employees`, `GET /api/skills` | Pending Manual Capture |
-| 3 | Candidate Ranking & Score Breakdown | `docs/screenshots/03_candidate_ranking_breakdown.png` | `GET /api/demands/50/candidates` | Pending Manual Capture |
-| 4 | Candidate Comparison Matrix | `docs/screenshots/04_candidate_comparison.png` | `GET /api/demands/50/candidates` | Pending Manual Capture |
+| 1 | Demand Intake / Management | `docs/screenshots/01_demand_intake.png` | `GET /api/demands` | **Captured & Verified** |
+| 2 | Employee Skills Matrix | `docs/screenshots/02_employee_skills_matrix.png` | `GET /api/employees`, `GET /api/skills` | **Captured & Verified** |
+| 3 | Candidate Ranking & Score Breakdown | `docs/screenshots/03_candidate_ranking_breakdown.png` | `GET /api/demands/53/candidates` | **Captured & Verified** |
+| 4 | Candidate Comparison Matrix | `docs/screenshots/04_candidate_comparison.png` | `GET /api/demands/53/candidates` | **Captured & Verified** |
 | 5 | Allocation Approval Workflow | `docs/screenshots/05_allocation_approval_workflow.png` | `POST /api/allocations`, `POST /api/allocations/{id}/confirm` | Pending Manual Capture |
 | 6 | Utilization Dashboard (Date Window) | `docs/screenshots/06_utilization_dashboard_window.png` | `GET /api/analytics/reports/utilization-by-employee-department` | Pending Manual Capture |
 | 7 | AI Assistant with Tool Grounding | `docs/screenshots/07_ai_assistant_tool_grounding.png` | `POST /api/assistant/chat` | Pending Manual Capture |
