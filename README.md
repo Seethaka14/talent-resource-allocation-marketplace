@@ -1,217 +1,137 @@
 # AI-Driven Talent and Resource Allocation Marketplace
 
-An enterprise resource management application that matches employees to project demands using deterministic eligibility evaluation, multi-dimensional candidate scoring, real capacity/availability assessment, and local Agentic AI with Ollama `llama3.2:3b`.
+An enterprise resource management application that matches employees to project demands using deterministic eligibility evaluation, multi-dimensional candidate scoring, real capacity/availability assessment, pessimistic locking concurrency control, safe Flyway migrations, six dedicated SQL analytics reports, and local Agentic AI with Ollama `llama3.2:3b`.
 
 ---
 
 ## 1. System Architecture & Tech Stack
 
 - **Backend**: Java 25 / Spring Boot 4.1.1 (Spring Data JPA, Hibernate, Bean Validation, Spring WebMVC)
-- **Database**: MySQL 8.4
+- **Database**: MySQL 8.4 Server
   - **Live Demo Database**: `talent_marketplace` (Protected; preserves seeded synthetic records)
   - **Isolated Test Database**: `talent_marketplace_test` (Targets all automated unit and integration tests)
+- **Database Migrations**: Flyway Community (Versioned SQL migrations with `V1__initial_schema.sql` and baseline-on-migrate safety)
+- **Concurrency Safety**: Pessimistic write locking (`PESSIMISTIC_WRITE` / `SELECT ... FOR UPDATE`) on Employee records during allocation confirmation to guarantee cumulative capacity integrity.
 - **Local AI Agent**: Ollama 0.35.0 running `llama3.2:3b`
-  - No external cloud LLM dependencies or paid API keys required.
+  - Zero external cloud LLM dependencies or paid API keys.
   - Controlled typed tool allowlist backed by existing deterministic Java services.
-  - Hybrid tool calling: Native Ollama OpenAI-compatible tool calling with structured-JSON fallback.
-- **Frontend**: Clean Vanilla HTML5, CSS3, and JavaScript Single Page Interface served directly from Spring Boot (`src/main/resources/static/index.html`).
+  - Grounding verification: Responses marked database-grounded only when tools succeed and return usable business data.
+- **Frontend**: Vanilla HTML5, CSS3, and JavaScript Single Page Application served directly from Spring Boot static resources (`http://localhost:8080/`).
 
 ---
 
-## 2. Ollama Setup & Model Verification
+## 2. Seven Interactive UI Screens
+
+The application UI serves 7 distinct operational screens:
+1. **Demand Intake / Management**: View, filter, and create project demands, skill requirements, and priorities.
+2. **Resource Directory & Skills Matrix**: Search employees, view statuses (`ACTIVE`, `ON_LEAVE`, `INACTIVE`), department, location, and verified skill proficiencies.
+3. **Candidate Recommendations & Scoring**: Deterministic candidate rankings for selected demands (e.g., Demand 50) using the authoritative formula: **Skills: /70**, **Availability: /20**, **Location: /10** (**Total: /100**).
+4. **Candidate Side-by-Side Comparison**: Multi-candidate comparative grid highlighting skill matching, proficiency deltas, and scoring breakdowns.
+5. **Allocation Workflow Management**: Draft allocation creation (`PENDING`), pessimistic locking confirmation (`CONFIRMED`), rejection with reasons, and cancellation.
+6. **Utilization & Analytics Dashboard**: Date-window evaluated resource utilization metrics with discrete evaluation windows `[startDate, endDate]`, distinguishing **Peak Simultaneous Commitment (%)** from **Time-Weighted Average Utilization (%)**.
+7. **Agentic AI Assistant Chat**: Interactive conversational drawer with natural language query answering, tool execution summaries, and verified database-grounding badges.
+
+---
+
+## 3. Six Dedicated SQL Analytics Reports
+
+The reporting engine exposes dedicated REST endpoints backed by native MySQL queries (`src/main/resources/db/reports/`):
+
+| Report # | Report Name | Endpoint | SQL Script File | Description |
+|---|---|---|---|---|
+| **Report 1** | Open Demands by Role & Priority | `GET /api/analytics/reports/open-demands-by-role-priority` | `src/main/resources/db/reports/report1_open_demands.sql` | Aggregates open demands grouped by role and priority urgency. |
+| **Report 2** | Resources by Skill & Proficiency | `GET /api/analytics/reports/resources-by-skill-proficiency` | `src/main/resources/db/reports/report2_resources_by_skill.sql` | Active employee counts per skill and level using `COUNT(DISTINCT e.id)`. |
+| **Report 3** | Availability for Date Range | `GET /api/analytics/reports/availability-date-range` | `src/main/resources/db/reports/report3_availability_date_range.sql` | Availability sweep over `[startDate, endDate]` accounting for leave and confirmed allocations. |
+| **Report 4** | Utilization by Employee & Department | `GET /api/analytics/reports/utilization-by-employee-department` | `src/main/resources/db/reports/report4_utilization_by_employee_dept.sql` | Time-weighted average utilization and peak simultaneous commitment over window; includes zero-allocation employees. |
+| **Report 5** | Demands with No Eligible Candidate | `GET /api/analytics/reports/demands-with-no-eligible-candidate` | `src/main/resources/db/reports/report5_demands_no_eligible_candidate.sql` | Identifies open demands with zero eligible candidates via deterministic recommendation engine. |
+| **Report 6** | Skill Gaps by Category | `GET /api/analytics/reports/skill-gaps-by-category` | `src/main/resources/db/reports/report6_skill_gaps_by_category.sql` | Aggregates demand requirements vs. qualified employee supply per category without double-counting. |
+
+---
+
+## 4. Flyway Migrations & Database Setup
+
+### Clean Database Initialization
+For fresh installations or clean testing containers:
+1. Apply versioned schema migration:
+   ```bash
+   src/main/resources/db/migration/V1__initial_schema.sql
+   ```
+2. Apply synthetic demo seed data:
+   ```bash
+   src/main/resources/db/seed/demo_data.sql
+   ```
+3. Hibernate schema validation (`spring.jpa.hibernate.ddl-auto=validate`) confirms 100% equivalence between the Flyway schema and JPA entities.
+
+### Safe Existing Database Adoption (`talent_marketplace`)
+Existing production/demo databases that were created without Flyway metadata must not have `flyway.migrate()` run without a baseline.
+- **Safety Precondition**: `spring.flyway.enabled=false` is configured in `application.properties` to ensure automated application runs never alter `talent_marketplace`.
+- **Manual Adoption Procedure**:
+  ```powershell
+  # Establish baseline at version 1 without executing DDL:
+  flyway -url="jdbc:mysql://localhost:3306/talent_marketplace?useSSL=false&allowPublicKeyRetrieval=true" `
+         -user="root" -password="rootpassword" `
+         -baselineVersion="1" -baselineDescription="Initial Schema" baseline
+  ```
+
+---
+
+## 5. Local Ollama AI Setup
 
 ### Prerequisites
 1. Download and install [Ollama](https://ollama.com/) (version 0.35.0 or later).
-2. Start the Ollama local daemon:
+2. Start the local daemon:
    ```bash
    ollama serve
    ```
-3. Pull or run the required `llama3.2:3b` model:
+3. Pull the required model:
    ```bash
-   ollama run llama3.2:3b
+   ollama pull llama3.2:3b
+   ```
+4. Verify local connectivity:
+   ```bash
+   curl http://localhost:11434/api/tags
    ```
 
-### Verifying Ollama Connectivity and Model
-Test the local Ollama tags endpoint:
-```bash
-curl http://localhost:11434/api/tags
-```
-Ensure `llama3.2:3b` appears in the list of installed models:
-```json
-{
-  "models": [
-    {
-      "name": "llama3.2:3b",
-      "model": "llama3.2:3b",
-      "details": {
-        "parameter_size": "3.2B",
-        "quantization_level": "Q4_K_M"
-      }
-    }
-  ]
-}
-```
+### Six Allowlisted Agentic Tools
+The AI Assistant interacts with application state exclusively through an allowlist of 6 typed Java service tools:
+- `search_open_demands`: Search open demands with role/location filters.
+- `get_demand_candidates`: Retrieve deterministic candidate rankings and scores for a demand.
+- `check_employee_availability`: Check candidate availability against leave and confirmed allocations.
+- `explain_missing_skills`: Explain mandatory and optional skill deficits for a candidate.
+- `compare_candidates`: Side-by-side comparative analysis of top candidates.
+- `get_allocation_status`: Retrieve current confirmed and pending allocation records.
 
 ---
 
-## 3. Configuration & Environment Variables
+## 6. Application Startup & Verification
 
-The application configures sensible local defaults and can be overridden via environment variables:
-
-| Environment Variable | Property Key | Default Value | Description |
-| :--- | :--- | :--- | :--- |
-| `OLLAMA_BASE_URL` | `ollama.base-url` | `http://localhost:11434` | Base URL of local Ollama HTTP server |
-| `OLLAMA_MODEL` | `ollama.model` | `llama3.2:3b` | Local model name to use for AI Assistant |
-| `OLLAMA_TIMEOUT_SECONDS` | `ollama.timeout-seconds` | `120` | Request timeout for local CPU/GPU generation |
-| `SPRING_DATASOURCE_URL` | `spring.datasource.url` | `jdbc:mysql://localhost:3306/talent_marketplace` | Live application database |
-
----
-
-## 4. Running the Application
-
-### Start Backend Application
+### Start Application
 ```powershell
 .\mvnw.cmd spring-boot:run
 ```
-The server will start on port `8080`.
+The server will start on port `8080`. Access the UI at `http://localhost:8080/`.
 
-### Access the Web UI
-Open your browser at:
+### Run Automated Tests
+```powershell
+.\mvnw.cmd clean test
 ```
-http://localhost:8080/
-```
-The UI provides an interactive AI Assistant chat panel on the left and a live Marketplace Overview dashboard on the right with quick prompt suggestions, grounding badges, and tool execution metrics.
+The test suite runs **159 automated tests (0 failures, 0 errors, 0 skipped)** strictly against `talent_marketplace_test`.
 
 ---
 
-## 5. Controlled Agentic AI Tools (Allowlist)
+## 7. Deliverables & Documentation Index
 
-To ensure zero hallucination and strict database grounding, the AI Assistant cannot execute arbitrary SQL or code. It accesses real application data strictly through an explicit allowlist of 6 typed Java service tools:
-
-| Tool Name | Backing Service | Parameters | Description |
-| :--- | :--- | :--- | :--- |
-| `search_open_demands` | `ProjectDemandService` | `department`, `role`, `location` | Search open project demands with required skills |
-| `get_demand_candidates` | `CandidateRecommendationService` | `demandId` (required) | Retrieve deterministic candidate rankings, scores, and match explanations |
-| `check_employee_availability` | `AvailabilityService` | `employeeId` (or name), `startDate`, `endDate`, `allocationPercent` | Check availability over date range against leave and active allocations |
-| `explain_missing_skills` | `CandidateRecommendationService` | `demandId` (required), `employeeId` (optional) | Explain mandatory skill gaps, optional skill gaps, and proficiency differences |
-| `compare_candidates` | `CandidateRecommendationService` | `demandId` (required), `limit` (default: 3) | Side-by-side comparative analysis of top candidates |
-| `get_allocation_status` | `ResourceAllocationService` | `demandId`, `employeeId` | Retrieve current confirmed and pending allocation records |
-
-### Tool Selection Architecture
-- **Dual-Mode Execution**:
-  1. Native tool calling: Sends tool definitions in the Ollama `tools` array.
-  2. Structured JSON fallback: Parses valid JSON tool calls in the model's text if `tool_calls` is empty.
-- **Safety Enforcement**:
-  - `AiToolRegistry` rejects any unapproved tool with a `SecurityException`.
-  - Max loop limit of 3 iterations prevents unbounded execution.
-  - Arguments are validated in Java before service invocation.
-- **Allocation Safety**:
-  - The AI Assistant operates in **strictly read-only** mode.
-  - Any prompt requesting state changes (e.g., "confirm allocation", "approve Marcus Brody") is intercepted and rejected with instructions to use the authorized allocation workflow (`POST /api/allocations/{id}/confirm`).
+- **Postman API Collection**: [docs/postman/talent_resource_marketplace.postman_collection.json](file:///c:/Users/SHemalatha/Downloads/talent-resource-marketplace/docs/postman/talent_resource_marketplace.postman_collection.json) (53 requests covering Phases 1–9).
+- **Screenshot Verification Guide**: [docs/SCREENSHOTS.md](file:///c:/Users/SHemalatha/Downloads/talent-resource-marketplace/docs/SCREENSHOTS.md) (Step-by-step manual capture guide for all 9 screens).
+- **AI Usage & Integration Log**: [AI_USAGE_LOG.md](file:///c:/Users/SHemalatha/Downloads/talent-resource-marketplace/AI_USAGE_LOG.md) (Architecture, 6 tools, grounding criteria, and verified experiments).
+- **Demonstration Plan**: [DEMO_PLAN.md](file:///c:/Users/SHemalatha/Downloads/talent-resource-marketplace/DEMO_PLAN.md) (Reproducible 5–10 minute demonstration script with minute markers).
+- **Submission Checklist**: [docs/SUBMISSION_CHECKLIST.md](file:///c:/Users/SHemalatha/Downloads/talent-resource-marketplace/docs/SUBMISSION_CHECKLIST.md) (Full mapping of requirements and TC-06-01 through TC-06-12).
 
 ---
 
-## 6. Example API Requests & Responses
-
-### Check AI Assistant Status
-**Request**:
-```http
-GET /api/assistant/status HTTP/1.1
-Host: localhost:8080
-```
-**Response**:
-```json
-{
-  "success": true,
-  "message": "AI Assistant status",
-  "data": {
-    "ollamaReachable": true,
-    "model": "llama3.2:3b",
-    "toolsCount": 6,
-    "allowedTools": [
-      "get_demand_candidates",
-      "search_open_demands",
-      "compare_candidates",
-      "explain_missing_skills",
-      "get_allocation_status",
-      "check_employee_availability"
-    ]
-  },
-  "timestamp": "2026-10-14T20:08:36"
-}
-```
-
-### Natural Language Question (Skill Gap Analysis)
-**Request**:
-```http
-POST /api/assistant/chat HTTP/1.1
-Host: localhost:8080
-Content-Type: application/json
-
-{
-  "message": "Why is Marcus Brody not eligible for demand 50?"
-}
-```
-**Response**:
-```json
-{
-  "success": true,
-  "message": "Assistant response generated successfully",
-  "data": {
-    "answer": "Marcus Brody is not eligible for demand 50 because he is missing the mandatory skill of AWS (Amazon Web Services). The system requires this skill for the Senior Java Backend Engineer role, and since Marcus Brody does not possess it, he is not eligible for this demand.",
-    "demandId": 50,
-    "employeeId": null,
-    "toolsInvoked": [
-      {
-        "toolName": "explain_missing_skills",
-        "arguments": {
-          "demandId": 50,
-          "employeeId": "Marcus Brody"
-        },
-        "executionDurationMs": 362,
-        "success": true,
-        "errorMessage": null
-      }
-    ],
-    "liveModelUsed": true,
-    "modelName": "llama3.2:3b",
-    "grounded": true,
-    "timestamp": "2026-10-14T20:12:11"
-  },
-  "timestamp": "2026-10-14T20:12:11"
-}
-```
-
-### Natural Language Question (Find Eligible Candidates)
-**Request**:
-```http
-POST /api/assistant/chat HTTP/1.1
-Host: localhost:8080
-Content-Type: application/json
-
-{
-  "message": "Find eligible candidates for demand 50"
-}
-```
-
----
-
-## 7. Database Safety & Test Isolation
+## 8. Database Safety & Test Isolation
 
 To safeguard live demo records, automated tests are programmatically isolated from `talent_marketplace`:
-
 1. **Dedicated Test Database**: `talent_marketplace_test` (`src/test/resources/application.properties`).
 2. **Programmatic Safety Guard**: `TestDatabaseSafetyGuard` inspects the active JDBC connection catalog on context initialization and before every `@BeforeEach cleanDatabase()`. If connected to `talent_marketplace`, tests abort immediately with an `IllegalStateException`.
-3. **Running the Full Test Suite Safely**:
-   ```powershell
-   .\mvnw.cmd clean test
-   ```
-   All 138 tests run exclusively against `talent_marketplace_test`.
-
----
-
-## 8. Limitations & Error Handling
-
-- **Local Model Performance**: Inference runs on the local CPU or GPU. Generation time typically takes 2–8 seconds depending on hardware.
-- **Read-Only Assistant**: The assistant cannot directly create, approve, or cancel allocations; all state changes must be confirmed via the authorized `/api/allocations` endpoints.
-- **Offline / Unavailable Ollama**: If Ollama is not running, `POST /api/assistant/chat` returns HTTP 503 (`Service Unavailable`) with clear diagnostic instructions (`ollama serve`). The assistant will never falsely claim a live model was used.
+3. **Demo Table Integrity**: Table counts on `talent_marketplace` are monitored before and after testing to ensure 0 records are ever dropped, truncated, or modified.

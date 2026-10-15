@@ -1,0 +1,1380 @@
+{
+  "info": {
+    "_postman_id": "talent-resource-marketplace-collection-v1",
+    "name": "AI-Driven Talent and Resource Allocation Marketplace API",
+    "description": "Comprehensive Postman API Collection covering all implemented phases (Phases 1-9) for the AI-Driven Talent and Resource Allocation Marketplace. Includes System Health, Employees, Skills, Unavailabilities, Project Demands, Candidate Recommendations & Scoring, Resource Allocation Workflow, Six Dedicated SQL Analytics Reports, and Agentic AI Assistant.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01. System Health",
+      "item": [
+        {
+          "name": "Application Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "health"
+              ]
+            },
+            "description": "Verifies that the Spring Boot backend server is healthy and responding."
+          }
+        },
+        {
+          "name": "AI Assistant Service Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/assistant/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "assistant",
+                "status"
+              ]
+            },
+            "description": "Checks connectivity to the local Ollama LLM service (llama3.2:3b) and reports registered allowlisted tools."
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. Employees",
+      "item": [
+        {
+          "name": "List All Employees",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/employees",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees"
+              ]
+            },
+            "description": "Retrieves all employees with department, location, employment status, and max capacity percentage."
+          }
+        },
+        {
+          "name": "Get Employee by ID (Aria Stark)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/employees/259",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees",
+                "259"
+              ]
+            },
+            "description": "Retrieves employee profile by database primary key ID."
+          }
+        },
+        {
+          "name": "Create Employee - Success",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeCode\": \"EMP-901\",\n  \"name\": \"Sarah Connor\",\n  \"email\": \"sarah.connor@talentmarketplace.com\",\n  \"department\": \"Security\",\n  \"designation\": \"Principal Security Engineer\",\n  \"location\": \"Remote\",\n  \"employmentStatus\": \"ACTIVE\",\n  \"maxCapacityPercent\": 100\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/employees",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees"
+              ]
+            },
+            "description": "Creates a new employee record with active status and maximum capacity."
+          }
+        },
+        {
+          "name": "Create Employee - Validation Error",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeCode\": \"\",\n  \"name\": \"\",\n  \"email\": \"not-an-email\",\n  \"maxCapacityPercent\": 150\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/employees",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees"
+              ]
+            },
+            "description": "Demonstrates Bean Validation error handling for blank fields, invalid email format, and capacity > 100%."
+          }
+        },
+        {
+          "name": "Update Employee",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeCode\": \"DEMO-EMP-001\",\n  \"name\": \"Aria Stark\",\n  \"email\": \"aria.stark.demo@talentmarketplace.com\",\n  \"department\": \"Engineering\",\n  \"designation\": \"Staff Cloud Architect\",\n  \"location\": \"New York\",\n  \"employmentStatus\": \"ACTIVE\",\n  \"maxCapacityPercent\": 100\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/employees/259",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees",
+                "259"
+              ]
+            },
+            "description": "Updates an existing employee's profile, designation, or department."
+          }
+        },
+        {
+          "name": "Check Employee Availability for Date Range",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/employees/259/availability?startDate=2026-11-01&endDate=2026-12-31&requestedAllocationPercent=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees",
+                "259",
+                "availability"
+              ],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2026-11-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-12-31"
+                },
+                {
+                  "key": "requestedAllocationPercent",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Evaluates candidate availability over an inclusive date range checking max capacity, confirmed allocations, and scheduled unavailabilities."
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Skills & Employee Skills",
+      "item": [
+        {
+          "name": "List All Skills",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/skills",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "skills"
+              ]
+            },
+            "description": "Retrieves all registered skills across BACKEND, FRONTEND, CLOUD_DEVOPS, DATABASE, SECURITY, and ARCHITECTURE."
+          }
+        },
+        {
+          "name": "Get Skill by ID (Java)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/skills/362",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "skills",
+                "362"
+              ]
+            },
+            "description": "Retrieves skill details by ID."
+          }
+        },
+        {
+          "name": "Create New Skill",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Rust\",\n  \"category\": \"BACKEND\",\n  \"description\": \"Systems programming language with memory safety guarantees\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/skills",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "skills"
+              ]
+            },
+            "description": "Registers a new skill in the catalog."
+          }
+        },
+        {
+          "name": "List Skills for Employee (Aria Stark)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/employees/259/skills",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees",
+                "259",
+                "skills"
+              ]
+            },
+            "description": "Retrieves verified skill proficiencies, years of experience, and validation notes for an employee."
+          }
+        },
+        {
+          "name": "Assign Skill to Employee",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"skillId\": 371,\n  \"proficiencyLevel\": \"INTERMEDIATE\",\n  \"yearsOfExperience\": 3.0,\n  \"validatedBy\": \"Security Director\",\n  \"evidenceNotes\": \"Passed internal security certification\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/employees/259/skills",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees",
+                "259",
+                "skills"
+              ]
+            },
+            "description": "Assigns a verified skill and proficiency level to an employee."
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Employee Unavailability",
+      "item": [
+        {
+          "name": "List Unavailabilities for Employee (Devon Vance)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/employees/262/unavailability",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees",
+                "262",
+                "unavailability"
+              ]
+            },
+            "description": "Retrieves leave and scheduled unavailability records for an employee."
+          }
+        },
+        {
+          "name": "Record Unavailability - Success",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startDate\": \"2027-02-10\",\n  \"endDate\": \"2027-02-18\",\n  \"type\": \"ANNUAL_LEAVE\",\n  \"reason\": \"Mid-year break\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/employees/259/unavailability",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees",
+                "259",
+                "unavailability"
+              ]
+            },
+            "description": "Records an approved unavailability period for an employee."
+          }
+        },
+        {
+          "name": "Record Unavailability - Validation Error (End Before Start)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startDate\": \"2027-03-20\",\n  \"endDate\": \"2027-03-10\",\n  \"type\": \"ANNUAL_LEAVE\",\n  \"reason\": \"Invalid date range\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/employees/259/unavailability",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "employees",
+                "259",
+                "unavailability"
+              ]
+            },
+            "description": "Demonstrates cross-field date validation rejection when end date precedes start date."
+          }
+        }
+      ]
+    },
+    {
+      "name": "05. Project Demands & Demand Skills",
+      "item": [
+        {
+          "name": "List All Project Demands",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/demands",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "demands"
+              ]
+            },
+            "description": "Retrieves all project demands with roles, departments, priorities, and dates."
+          }
+        },
+        {
+          "name": "Search Demands Filtered (OPEN, HIGH priority, New York)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/demands?status=OPEN&priority=HIGH&location=New York",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "demands"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "OPEN"
+                },
+                {
+                  "key": "priority",
+                  "value": "HIGH"
+                },
+                {
+                  "key": "location",
+                  "value": "New York"
+                }
+              ]
+            },
+            "description": "Searches demands by status, priority, and location."
+          }
+        },
+        {
+          "name": "Get Demand by ID (Demand 50 - Payments Modernization)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/demands/50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "demands",
+                "50"
+              ]
+            },
+            "description": "Retrieves project demand details including all mandatory and optional skill requirements."
+          }
+        },
+        {
+          "name": "Get Demand by Code (DEMO-DEM-001)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/demands/code/DEMO-DEM-001",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "demands",
+                "code",
+                "DEMO-DEM-001"
+              ]
+            },
+            "description": "Retrieves demand by human-readable business demand code."
+          }
+        },
+        {
+          "name": "Create Project Demand - Success",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"demandCode\": \"DEM-2027-01\",\n  \"projectName\": \"Cloud Native Observability\",\n  \"role\": \"Senior SRE / Observability Lead\",\n  \"department\": \"DevOps & SRE\",\n  \"location\": \"Remote\",\n  \"startDate\": \"2027-04-01\",\n  \"endDate\": \"2027-06-30\",\n  \"allocationPercent\": 100,\n  \"priority\": \"HIGH\",\n  \"requiredExperienceYears\": 5.0,\n  \"requiredSkills\": [\n    {\n      \"skillId\": 368,\n      \"minimumProficiency\": \"ADVANCED\",\n      \"mandatory\": true\n    },\n    {\n      \"skillId\": 367,\n      \"minimumProficiency\": \"INTERMEDIATE\",\n      \"mandatory\": false\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/demands",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "demands"
+              ]
+            },
+            "description": "Creates a new project demand with inline skill requirements."
+          }
+        },
+        {
+          "name": "Create Project Demand - Validation Error",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"demandCode\": \"\",\n  \"projectName\": \"\",\n  \"role\": \"\",\n  \"allocationPercent\": 120\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/demands",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "demands"
+              ]
+            },
+            "description": "Demonstrates demand validation rejection for missing mandatory attributes."
+          }
+        },
+        {
+          "name": "Add Skill Requirement to Demand",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"skillId\": 372,\n  \"minimumProficiency\": \"INTERMEDIATE\",\n  \"mandatory\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/demands/50/skills",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "demands",
+                "50",
+                "skills"
+              ]
+            },
+            "description": "Adds an optional or mandatory skill requirement to an existing demand."
+          }
+        },
+        {
+          "name": "Cancel Project Demand",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Budget reprioritized for Q2\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/demands/54/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "demands",
+                "54",
+                "cancel"
+              ]
+            },
+            "description": "Cancels a demand, updating status to CANCELLED."
+          }
+        }
+      ]
+    },
+    {
+      "name": "06. Candidate Recommendations & Scoring",
+      "item": [
+        {
+          "name": "Get All Candidate Recommendations for Demand 50",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/demands/50/candidates",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "demands",
+                "50",
+                "candidates"
+              ]
+            },
+            "description": "Returns candidate rankings evaluated against Demand 50. Uses authoritative formula: Skills /70, Availability /20, Location /10 = Total /100. Aria Stark is ranked #1 (96.1/100, eligible=true)."
+          }
+        },
+        {
+          "name": "Get Eligible Only Candidates for Demand 50",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/demands/50/candidates?eligibleOnly=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "demands",
+                "50",
+                "candidates"
+              ],
+              "query": [
+                {
+                  "key": "eligibleOnly",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Filters recommendation list to strictly eligible candidates (only Aria Stark qualifies)."
+          }
+        },
+        {
+          "name": "Evaluate Single Candidate - Eligible (Aria Stark)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/demands/50/candidates/259",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "demands",
+                "50",
+                "candidates",
+                "259"
+              ]
+            },
+            "description": "Detailed candidate evaluation report for Aria Stark showing matched skills, availability assessment, and 96.1 total score."
+          }
+        },
+        {
+          "name": "Evaluate Single Candidate - Ineligible (Marcus Brody - Missing AWS)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/demands/50/candidates/260",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "demands",
+                "50",
+                "candidates",
+                "260"
+              ]
+            },
+            "description": "Demonstrates deterministic disqualification: Marcus Brody is marked eligible=false due to missing mandatory AWS skill."
+          }
+        },
+        {
+          "name": "Evaluate Single Candidate - Ineligible (Devon Vance - Leave Conflict)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/demands/50/candidates/262",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "demands",
+                "50",
+                "candidates",
+                "262"
+              ]
+            },
+            "description": "Demonstrates calendar conflict disqualification: Devon Vance has high skill score but 0 availability score due to family vacation overlap."
+          }
+        }
+      ]
+    },
+    {
+      "name": "07. Resource Allocations (Workflow & Concurrency)",
+      "item": [
+        {
+          "name": "List All Allocations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/allocations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "allocations"
+              ]
+            },
+            "description": "Retrieves all resource allocation records across all statuses."
+          }
+        },
+        {
+          "name": "Filter Allocations by Status (CONFIRMED)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/allocations?status=CONFIRMED",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "allocations"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "CONFIRMED"
+                }
+              ]
+            },
+            "description": "Filters allocation records by status (PENDING, CONFIRMED, REJECTED, CANCELLED)."
+          }
+        },
+        {
+          "name": "Create Allocation Draft - Success (Aria Stark -> Demand 50)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": 259,\n  \"demandId\": 50,\n  \"allocatedPercentage\": 50,\n  \"startDate\": \"2026-11-01\",\n  \"endDate\": \"2026-12-31\",\n  \"notes\": \"Draft assignment for Payments Modernization\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/allocations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "allocations"
+              ]
+            },
+            "description": "Creates a new allocation in PENDING state. Does not consume confirmed capacity until confirmed."
+          }
+        },
+        {
+          "name": "Create Allocation - Validation Error (Allocation > 100%)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": 259,\n  \"demandId\": 50,\n  \"allocatedPercentage\": 150,\n  \"startDate\": \"2026-11-01\",\n  \"endDate\": \"2026-12-31\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/allocations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "allocations"
+              ]
+            },
+            "description": "Demonstrates rejection of allocation request exceeding maximum percentage threshold."
+          }
+        },
+        {
+          "name": "Confirm Allocation (Pessimistic Locking Protected)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirmedBy\": \"Delivery Lead\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/allocations/1/confirm",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "allocations",
+                "1",
+                "confirm"
+              ]
+            },
+            "description": "Confirms an allocation using Phase 7 pessimistic write lock on employee record, guaranteeing capacity safety."
+          }
+        },
+        {
+          "name": "Reject Allocation with Reason",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rejectionReason\": \"Resource required on urgent production incident\",\n  \"rejectedBy\": \"Resource Manager\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/allocations/1/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "allocations",
+                "1",
+                "reject"
+              ]
+            },
+            "description": "Rejects a pending allocation, updating status to REJECTED."
+          }
+        },
+        {
+          "name": "Cancel Confirmed Allocation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Client cancelled project scope\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/allocations/1/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "allocations",
+                "1",
+                "cancel"
+              ]
+            },
+            "description": "Cancels a confirmed allocation, releasing employee capacity."
+          }
+        },
+        {
+          "name": "Get Allocations for Employee (Aria Stark)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/allocations/employee/259",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "allocations",
+                "employee",
+                "259"
+              ]
+            },
+            "description": "Retrieves all allocation commitments for an employee."
+          }
+        },
+        {
+          "name": "Get Allocations for Demand (Demand 50)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/allocations/demand/50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "allocations",
+                "demand",
+                "50"
+              ]
+            },
+            "description": "Retrieves all candidate allocations for a demand."
+          }
+        }
+      ]
+    },
+    {
+      "name": "08. SQL Analytics Reports (Phase 9A)",
+      "item": [
+        {
+          "name": "Report 1: Open Demands by Role and Priority",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/reports/open-demands-by-role-priority",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "reports",
+                "open-demands-by-role-priority"
+              ]
+            },
+            "description": "Dedicated SQL Report 1: Native SQL query aggregating open project demands grouped by role and priority, sorted by role and priority urgency."
+          }
+        },
+        {
+          "name": "Report 2: Resources by Skill and Proficiency (All)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/reports/resources-by-skill-proficiency",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "reports",
+                "resources-by-skill-proficiency"
+              ]
+            },
+            "description": "Dedicated SQL Report 2: Native SQL query returning active employee counts per skill and proficiency level using COUNT(DISTINCT e.id)."
+          }
+        },
+        {
+          "name": "Report 2: Resources by Skill - Filtered (BACKEND)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/reports/resources-by-skill-proficiency?category=BACKEND",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "reports",
+                "resources-by-skill-proficiency"
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "BACKEND"
+                }
+              ]
+            },
+            "description": "Dedicated SQL Report 2 with optional category filter."
+          }
+        },
+        {
+          "name": "Report 3: Availability for Date Range (Q4 2026)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/reports/availability-date-range?startDate=2026-11-01&endDate=2026-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "reports",
+                "availability-date-range"
+              ],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2026-11-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-12-31"
+                }
+              ]
+            },
+            "description": "Dedicated SQL Report 3: Availability report over [startDate, endDate] checking max capacity, confirmed allocations, and approved leave."
+          }
+        },
+        {
+          "name": "Report 3: Availability Filtered (Engineering Dept & Min 50%)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/reports/availability-date-range?startDate=2026-11-01&endDate=2026-12-31&department=Engineering&minAvailablePercent=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "reports",
+                "availability-date-range"
+              ],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2026-11-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-12-31"
+                },
+                {
+                  "key": "department",
+                  "value": "Engineering"
+                },
+                {
+                  "key": "minAvailablePercent",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Dedicated SQL Report 3 with department and minimum remaining available capacity filters."
+          }
+        },
+        {
+          "name": "Report 4: Utilization by Employee and Department",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/reports/utilization-by-employee-department?startDate=2026-11-01&endDate=2026-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "reports",
+                "utilization-by-employee-department"
+              ],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2026-11-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-12-31"
+                }
+              ]
+            },
+            "description": "Dedicated SQL Report 4: Evaluates confirmed allocations across defined window [2026-11-01, 2026-12-31]. Accurately distinguishes Peak Simultaneous Commitment (%) from Time-Weighted Average Utilization (%). Includes zero-allocation employees."
+          }
+        },
+        {
+          "name": "Report 4: Utilization Filtered by Department (Engineering)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/reports/utilization-by-employee-department?startDate=2026-11-01&endDate=2026-12-31&department=Engineering",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "reports",
+                "utilization-by-employee-department"
+              ],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2026-11-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-12-31"
+                },
+                {
+                  "key": "department",
+                  "value": "Engineering"
+                }
+              ]
+            },
+            "description": "Dedicated SQL Report 4 filtered to a specific department."
+          }
+        },
+        {
+          "name": "Report 5: Demands with No Eligible Candidate",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/reports/demands-with-no-eligible-candidate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "reports",
+                "demands-with-no-eligible-candidate"
+              ]
+            },
+            "description": "Dedicated SQL Report 5: SQL-backed open demand query combined with authoritative Java CandidateRecommendationService to find open demands with zero eligible candidates."
+          }
+        },
+        {
+          "name": "Report 6: Skill Gaps by Category (All)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/reports/skill-gaps-by-category",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "reports",
+                "skill-gaps-by-category"
+              ]
+            },
+            "description": "Dedicated SQL Report 6: Aggregates open demand skill requirements vs. active employee supply per category. Accounts for proficiency levels (BEGINNER < INTERMEDIATE < ADVANCED) and computes net deficit without double-counting."
+          }
+        },
+        {
+          "name": "Report 6: Skill Gaps - Specific Category (CLOUD_DEVOPS)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/reports/skill-gaps-by-category?category=CLOUD_DEVOPS",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "reports",
+                "skill-gaps-by-category"
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "CLOUD_DEVOPS"
+                }
+              ]
+            },
+            "description": "Dedicated SQL Report 6 filtered to CLOUD_DEVOPS category."
+          }
+        }
+      ]
+    },
+    {
+      "name": "09. AI Assistant (Agentic Tool Invocations)",
+      "item": [
+        {
+          "name": "Query Open Demands (Natural Language)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"What are the open project demands?\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/assistant/chat",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "assistant",
+                "chat"
+              ]
+            },
+            "description": "Invokes search_open_demands tool, returns tool evidence, and marks response grounded=true."
+          }
+        },
+        {
+          "name": "Find Candidates for Demand 50 (Natural Language)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Find candidates for demand 50\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/assistant/chat",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "assistant",
+                "chat"
+              ]
+            },
+            "description": "Invokes get_demand_candidates tool, returning ranked candidate list grounded in real database records."
+          }
+        },
+        {
+          "name": "Explain Missing Skills (Marcus Brody for Demand 50)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Why is Marcus Brody not eligible for demand 50?\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/assistant/chat",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "assistant",
+                "chat"
+              ]
+            },
+            "description": "Invokes explain_missing_skills tool to explain missing mandatory AWS skill."
+          }
+        },
+        {
+          "name": "Compare Candidates for Demand 50 (Natural Language)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Compare top candidates for demand 50\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/assistant/chat",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "assistant",
+                "chat"
+              ]
+            },
+            "description": "Invokes compare_candidates tool for side-by-side comparative analysis."
+          }
+        },
+        {
+          "name": "Security Safeguard: Unauthorized State Modification Rejection",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Confirm allocation 1 right now and approve Aria Stark\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/assistant/chat",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "assistant",
+                "chat"
+              ]
+            },
+            "description": "Security safeguard: AI assistant operates in strictly read-only mode and rejects state modification prompts with instructions to use authorized APIs."
+          }
+        }
+      ]
+    }
+  ]
+}
