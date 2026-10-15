@@ -36,7 +36,7 @@
     <header class="navbar">
         <div class="nav-container">
             <a href="/" class="brand" aria-label="Talent Marketplace Home">
-                <div class="brand-icon">⚡</div>
+                <div class="brand-icon"><span style="font-size:0.85rem; font-weight:800; color:#fff;">TRM</span></div>
                 <div class="brand-text">
                     <h1>Talent Marketplace</h1>
                     <p>Agentic Resource Matching & Allocation</p>
@@ -46,31 +46,31 @@
             <!-- Screen Navigation Tabs -->
             <nav class="nav-tabs" aria-label="Primary Application Navigation">
                 <button class="nav-tab active" data-screen="demand-intake" id="navTabDemandIntake">
-                    <span class="tab-icon">📋</span>
+                    
                     <span class="tab-label">Demand Intake</span>
                 </button>
                 <button class="nav-tab" data-screen="skills-matrix" id="navTabSkillsMatrix">
-                    <span class="tab-icon">👥</span>
+                    
                     <span class="tab-label">Skills Matrix</span>
                 </button>
                 <button class="nav-tab" data-screen="resource-ranking" id="navTabResourceRanking">
-                    <span class="tab-icon">🔍</span>
+                    
                     <span class="tab-label">Resource Ranking</span>
                 </button>
                 <button class="nav-tab" data-screen="candidate-comparison" id="navTabCandidateComparison">
-                    <span class="tab-icon">⚖️</span>
+                    
                     <span class="tab-label">Comparison</span>
                 </button>
                 <button class="nav-tab" data-screen="allocation-approvals" id="navTabAllocationApprovals">
-                    <span class="tab-icon">🛡️</span>
+                    
                     <span class="tab-label">Allocations</span>
                 </button>
                 <button class="nav-tab" data-screen="utilization-dashboard" id="navTabUtilizationDashboard">
-                    <span class="tab-icon">📊</span>
+                    
                     <span class="tab-label">Utilization & Gaps</span>
                 </button>
                 <button class="nav-tab" data-screen="ai-assistant" id="navTabAiAssistant">
-                    <span class="tab-icon">🦙</span>
+                    
                     <span class="tab-label">AI Assistant</span>
                 </button>
             </nav>
@@ -96,7 +96,7 @@
                     <h2 id="headingDemandIntake">Project Demand Intake</h2>
                     <p class="screen-subtitle">Create a structured project demand with required skills, minimum proficiencies, and allocation requirements.</p>
                 </div>
-                <button type="button" class="btn btn-secondary" id="btnRefreshDemands">🔄 Refresh Demands</button>
+                <button type="button" class="btn btn-secondary" id="btnRefreshDemands">Refresh Demands</button>
             </div>
 
             <div class="grid-layout-2col">
@@ -117,7 +117,7 @@
                                 <label for="demandCode">Demand Code <span class="required">*</span></label>
                                 <div class="input-with-action">
                                     <input type="text" id="demandCode" name="demandCode" required maxlength="30" placeholder="e.g. DEM-2026-001" pattern="^[A-Za-z0-9_-]{3,30}$">
-                                    <button type="button" id="btnGenDemandCode" class="btn-input-addon" title="Auto-generate demand code">⚡ Auto</button>
+                                    <button type="button" id="btnGenDemandCode" class="btn-input-addon" title="Auto-generate demand code">Auto</button>
                                 </div>
                                 <small class="form-hint">3-30 letters, numbers, hyphens or underscores.</small>
                             </div>
@@ -257,7 +257,7 @@
                     <p class="screen-subtitle">Comprehensive directory of enterprise talent, proficiency weights, and verified technical competencies.</p>
                 </div>
                 <div class="header-actions">
-                    <button type="button" class="btn btn-secondary" id="btnRefreshMatrix">🔄 Refresh Directory</button>
+                    <button type="button" class="btn btn-secondary" id="btnRefreshMatrix">Refresh Directory</button>
                 </div>
             </div>
 
@@ -359,7 +359,7 @@
             <div id="rankingActionToolbar" class="action-toolbar" style="display: none;">
                 <span id="selectedCandidatesCountText">0 candidates selected</span>
                 <div class="toolbar-buttons">
-                    <button type="button" class="btn btn-primary btn-sm" id="btnCompareSelectedFromRanking">⚖️ Compare Selected Candidates</button>
+                    <button type="button" class="btn btn-primary btn-sm" id="btnCompareSelectedFromRanking">Compare Selected Candidates</button>
                     <button type="button" class="btn btn-secondary btn-sm" id="btnClearSelectedCandidates">Clear Selection</button>
                 </div>
             </div>
@@ -367,7 +367,7 @@
             <!-- Candidates Results List Container -->
             <div id="rankingResultsContainer">
                 <div class="empty-state">
-                    <span class="empty-icon">🔍</span>
+                    <span class="empty-icon"></span>
                     <h3>Select a Project Demand</h3>
                     <p>Select an open project demand from the dropdown above and click 'Rank Candidates' to run deterministic candidate evaluation.</p>
                 </div>
@@ -409,7 +409,7 @@
             <!-- Side-by-Side Comparison Container -->
             <div id="comparisonTableWrapper" class="comparison-results-wrapper">
                 <div class="empty-state">
-                    <span class="empty-icon">⚖️</span>
+                    <span class="empty-icon"></span>
                     <h3>Select Candidates to Compare</h3>
                     <p>Choose a demand above and check at least two candidates to generate an authoritative side-by-side comparison matrix.</p>
                 </div>
@@ -427,7 +427,7 @@
                 </div>
                 <div class="header-actions">
                     <button type="button" class="btn btn-primary" id="btnOpenNewAllocationModal">+ Request Allocation</button>
-                    <button type="button" class="btn btn-secondary" id="btnRefreshAllocations">🔄 Refresh</button>
+                    <button type="button" class="btn btn-secondary" id="btnRefreshAllocations">Refresh</button>
                 </div>
             </div>
 
@@ -464,7 +464,7 @@
                     <p class="screen-subtitle">Real-time organizational capacity utilization and demand-versus-supply skill shortage diagnostics.</p>
                 </div>
                 <div class="header-actions">
-                    <button type="button" class="btn btn-secondary" id="btnRefreshDashboard">🔄 Refresh Metrics</button>
+                    <button type="button" class="btn btn-secondary" id="btnRefreshDashboard">Refresh Metrics</button>
                 </div>
             </div>
 
@@ -491,7 +491,7 @@
             <!-- KPI Metric Cards -->
             <div class="metric-cards-grid">
                 <div class="metric-card">
-                    <div class="metric-icon">👥</div>
+                    
                     <div class="metric-info">
                         <span class="metric-title">Active Headcount</span>
                         <h3 class="metric-value" id="kpiActiveEmployees">0</h3>
@@ -500,7 +500,7 @@
                 </div>
 
                 <div class="metric-card">
-                    <div class="metric-icon">📋</div>
+                    
                     <div class="metric-info">
                         <span class="metric-title">Open Project Demands</span>
                         <h3 class="metric-value" id="kpiOpenDemands">0</h3>
@@ -509,7 +509,7 @@
                 </div>
 
                 <div class="metric-card">
-                    <div class="metric-icon">🔒</div>
+                    
                     <div class="metric-info">
                         <span class="metric-title">Confirmed Allocations</span>
                         <h3 class="metric-value" id="kpiConfirmedAllocations">0</h3>
@@ -518,7 +518,7 @@
                 </div>
 
                 <div class="metric-card">
-                    <div class="metric-icon">📊</div>
+                    
                     <div class="metric-info">
                         <span class="metric-title">Avg Window Utilization</span>
                         <h3 class="metric-value" id="kpiAvgUtilization">0%</h3>
@@ -566,7 +566,7 @@
                     <p class="screen-subtitle">Local Ollama llama3.2:3b autonomous assistant backed by 6 deterministic Java service tools.</p>
                 </div>
                 <div class="safety-pill">
-                    <span>🔒 Read-Only Safety Enforced</span>
+                    <span>Read-Only Safety Enforced</span>
                 </div>
             </div>
 
@@ -575,7 +575,7 @@
                 <div class="chat-container">
                     <div class="chat-header">
                         <div class="chat-header-title">
-                            <span class="llama-icon">🦙</span>
+                            
                             <span>Staffing Agent Conversation</span>
                             <span class="chat-tools-count">6 Grounded Tools</span>
                         </div>
@@ -587,7 +587,7 @@
                     <!-- Messages Stream -->
                     <div class="chat-messages" id="chatMessages" role="log" aria-live="polite">
                         <div class="message-bubble assistant">
-                            <div class="avatar ai-avatar">🦙</div>
+                            <div class="avatar ai-avatar">AI</div>
                             <div class="message-content">
                                 Hello! I am your AI Staffing Agent connected to your local <strong>llama3.2:3b</strong> model.
                                 I can assist with evaluating project demands, running deterministic candidate matches, analyzing skill gaps, and inspecting employee availability.

@@ -430,7 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const json = await res.json();
             if (res.ok) {
-                demandFormSuccessBanner.innerHTML = `✅ Demand <strong>${escapeHtml(code)}</strong> created successfully! It is now active for candidate matching.`;
+                demandFormSuccessBanner.innerHTML = `Demand <strong>${escapeHtml(code)}</strong> created successfully! It is now active for candidate matching.`;
                 demandFormSuccessBanner.style.display = 'block';
                 demandForm.reset();
                 requiredSkillsBuilderList = [];
@@ -442,7 +442,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (json.errors) {
                     msg += ' ' + Object.entries(json.errors).map(([k, v]) => `${k}: ${v}`).join(', ');
                 }
-                demandFormErrorBanner.textContent = `❌ ${msg}`;
+                demandFormErrorBanner.textContent = `${msg}`;
                 demandFormErrorBanner.style.display = 'block';
             }
         } catch (err) {
@@ -474,14 +474,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div>
                             <strong style="color:var(--text-primary); font-size:0.95rem;">${escapeHtml(d.role)}</strong>
                             <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:0.2rem;">
-                                🏢 ${escapeHtml(d.department || 'General')} • 📍 ${escapeHtml(d.location)} • Code: <code>${escapeHtml(d.demandCode)}</code> (#${d.id})
+                                ${escapeHtml(d.department || 'General')} • ${escapeHtml(d.location)} • Code: <code>${escapeHtml(d.demandCode)}</code> (#${d.id})
                             </div>
                         </div>
                         <span class="badge ${d.priority === 'CRITICAL' ? 'badge-danger' : d.priority === 'HIGH' ? 'badge-warning' : 'badge-grounded'}">${d.priority}</span>
                     </div>
 
                     <div style="font-size:0.75rem; color:var(--text-muted); margin:0.4rem 0;">
-                        📅 ${d.startDate} to ${d.endDate} • ${d.allocationPercent}% Capacity
+                        ${d.startDate} to ${d.endDate} • ${d.allocationPercent}% Capacity
                     </div>
 
                     <div style="display:flex; flex-wrap:wrap; gap:0.35rem; margin-top:0.35rem;">
@@ -493,8 +493,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
 
                     <div style="display:flex; gap:0.5rem; margin-top:0.75rem; padding-top:0.5rem; border-top:1px solid var(--border-color);">
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="window.marketplace.selectDemandForRanking(${d.id})">🔍 Rank Candidates</button>
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="window.marketplace.askAiAboutDemand(${d.id})">🦙 Ask AI</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="window.marketplace.selectDemandForRanking(${d.id})">Rank Candidates</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="window.marketplace.askAiAboutDemand(${d.id})">Ask AI</button>
                     </div>
                 </div>
             `).join('');
@@ -630,7 +630,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     </div>
                                 </td>
                                 <td>
-                                    <button type="button" class="btn btn-secondary btn-sm" onclick="window.marketplace.askAiAboutEmployee('${escapeHtml(emp.name)}')">🦙 Inquire</button>
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="window.marketplace.askAiAboutEmployee('${escapeHtml(emp.name)}')">Inquire</button>
                                 </td>
                             </tr>
                         `;
@@ -702,7 +702,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (candidates.length === 0) {
                 rankingResultsContainer.innerHTML = `
                     <div class="empty-state">
-                        <span class="empty-icon">⚠️</span>
+                        <span class="empty-icon"></span>
                         <h3>No Matching Candidates</h3>
                         <p>No candidates satisfied the current criteria for demand #${demandId} (Eligible Only: ${eligibleOnly}). Try unchecking 'Eligible Only'.</p>
                     </div>
@@ -740,9 +740,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                             <!-- Score breakdown tags -->
                             <div class="score-breakdown-tags">
-                                <span class="score-tag" title="Skill Match Score">🎯 Skills: <strong>${c.skillScore.toFixed(1)}/70</strong></span>
-                                <span class="score-tag" title="Availability Score">📅 Availability: <strong>${c.availabilityScore.toFixed(1)}/20</strong></span>
-                                <span class="score-tag" title="Location Alignment Score">📍 Location: <strong>${c.locationScore.toFixed(1)}/10</strong></span>
+                                <span class="score-tag" title="Skill Match Score">Skills: <strong>${c.skillScore.toFixed(1)}/70</strong></span>
+                                <span class="score-tag" title="Availability Score">Availability: <strong>${c.availabilityScore.toFixed(1)}/20</strong></span>
+                                <span class="score-tag" title="Location Alignment Score">Location: <strong>${c.locationScore.toFixed(1)}/10</strong></span>
                             </div>
 
                             <!-- Matched vs Missing Skills -->
@@ -763,14 +763,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
                                 ${c.exclusionReasons && c.exclusionReasons.length > 0 ? `
                                     <div style="margin-top:0.4rem; color:#fca5a5; font-size:0.75rem;">
-                                        ⛔ <strong>Exclusion Reasons:</strong> ${c.exclusionReasons.map(r => escapeHtml(r)).join('; ')}
+                                        <strong>Exclusion Reasons:</strong> ${c.exclusionReasons.map(r => escapeHtml(r)).join('; ')}
                                     </div>
                                 ` : ''}
                             </div>
 
                             <!-- Deterministic Match Explanation -->
                             <div class="candidate-explanation">
-                                💡 ${escapeHtml(c.matchExplanation)}
+                                ${escapeHtml(c.matchExplanation)}
                             </div>
 
                             <!-- Card Action Footer -->
@@ -781,11 +781,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </label>
                                 <div style="display:flex; gap:0.5rem;">
                                     ${c.eligible ? `
-                                        <button type="button" class="btn btn-primary btn-sm" onclick="window.marketplace.openCreateAllocationForCandidate(${demandId}, ${c.employeeId}, '${escapeHtml(c.employeeName)}')">⚡ Allocate Candidate</button>
+                                        <button type="button" class="btn btn-primary btn-sm" onclick="window.marketplace.openCreateAllocationForCandidate(${demandId}, ${c.employeeId}, '${escapeHtml(c.employeeName)}')">Allocate Candidate</button>
                                     ` : `
                                         <button type="button" class="btn btn-secondary btn-sm" disabled title="Candidate is not eligible based on capacity/skills">Ineligible for Allocation</button>
                                     `}
-                                    <button type="button" class="btn btn-secondary btn-sm" onclick="window.marketplace.askAiAboutCandidateDemand(${demandId}, '${escapeHtml(c.employeeName)}')">🦙 Inquire</button>
+                                    <button type="button" class="btn btn-secondary btn-sm" onclick="window.marketplace.askAiAboutCandidateDemand(${demandId}, '${escapeHtml(c.employeeName)}')">Inquire</button>
                                 </div>
                             </div>
                         </div>
@@ -920,7 +920,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (candidates.length < 2) {
             comparisonTableWrapper.innerHTML = `
                 <div class="empty-state">
-                    <span class="empty-icon">⚖️</span>
+                    <span class="empty-icon"></span>
                     <h3>Select at least 2 candidates</h3>
                     <p>Currently, ${candidates.length} candidate is selected. Check at least 2 candidates above to generate the side-by-side comparison matrix.</p>
                 </div>
@@ -976,9 +976,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${candidates.map(c => `
                             <td>
                                 <div style="display:flex; flex-direction:column; gap:0.25rem;">
-                                    <div>🎯 Skills: <strong>${c.skillScore.toFixed(1)}</strong> / 70</div>
-                                    <div>📅 Availability: <strong>${c.availabilityScore.toFixed(1)}</strong> / 20</div>
-                                    <div>📍 Location: <strong>${c.locationScore.toFixed(1)}</strong> / 10</div>
+                                    <div>Skills: <strong>${c.skillScore.toFixed(1)}</strong> / 70</div>
+                                    <div>Availability: <strong>${c.availabilityScore.toFixed(1)}</strong> / 20</div>
+                                    <div>Location: <strong>${c.locationScore.toFixed(1)}</strong> / 10</div>
                                 </div>
                             </td>
                         `).join('')}
@@ -1013,20 +1013,20 @@ document.addEventListener('DOMContentLoaded', () => {
                                 if (matched) {
                                     return `
                                         <td>
-                                            <span class="badge badge-tool">✅ ${matched.candidateProficiency}</span>
+                                            <span class="badge badge-tool">${matched.candidateProficiency}</span>
                                             <div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.2rem;">${matched.yearsOfExperience || 0} years experience</div>
                                         </td>
                                     `;
                                 } else if (isMissingMandatory) {
                                     return `
                                         <td>
-                                            <span class="badge badge-danger">❌ Missing (Mandatory)</span>
+                                            <span class="badge badge-danger">Missing (Mandatory)</span>
                                         </td>
                                     `;
                                 } else {
                                     return `
                                         <td>
-                                            <span class="badge badge-neutral">⚠️ Not Possessed</span>
+                                            <span class="badge badge-neutral">Not Possessed</span>
                                         </td>
                                     `;
                                 }
@@ -1104,7 +1104,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (allocations.length === 0) {
                 allocationsTableContainer.innerHTML = `
                     <div class="empty-state">
-                        <span class="empty-icon">🛡️</span>
+                        <span class="empty-icon"></span>
                         <h3>No Allocations Found</h3>
                         <p>There are no resource allocation records matching status filter '<strong>${state.currentAllocationStatusFilter}</strong>'.</p>
                     </div>
@@ -1193,7 +1193,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <input type="text" id="modalConfirmedByInput" value="Resource Manager" required>
                 </div>
                 <div class="text-sm text-secondary" style="margin-top:0.75rem; background:rgba(99,102,241,0.1); padding:0.6rem; border-radius:4px;">
-                    🔒 <strong>Capacity Safety:</strong> This transaction executes serialized pessimistic write locking on the employee row to ensure 100% capacity safety.
+                    <strong>Capacity Safety:</strong> This transaction executes serialized pessimistic write locking on the employee row to ensure 100% capacity safety.
                 </div>
             `,
             confirmText: 'Confirm Allocation',
@@ -1557,10 +1557,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                                 <div style="display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap;">
                                     <span class="badge ${fillClass === 'danger' ? 'badge-danger' : fillClass === 'committed' ? 'badge-warning' : 'badge-tool'}" title="Maximum simultaneous commitment on any single day within window">
-                                        🎯 ${peak}% Peak (${peakUtil}% of cap)
+                                        ${peak}% Peak (${peakUtil}% of cap)
                                     </span>
                                     <span class="badge badge-secondary" title="Day-weighted average allocation across entire window">
-                                        ⏱️ ${timeWeighted}% Avg
+                                        ${timeWeighted}% Avg
                                     </span>
                                     <span class="badge badge-grounded">
                                         ${allocCount} confirmed
@@ -1615,9 +1615,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${allSkillRows.map(row => {
                                 const isCritical = row.deficit > 0 && row.mandatoryDemandCount > 0;
                                 const isModerate = row.deficit > 0 && !isCritical;
-                                const statusBadge = isCritical ? `<span class="badge badge-danger">🚨 DEFICIT: -${row.deficit}</span>` :
-                                                    isModerate ? `<span class="badge badge-warning">⚠️ DEFICIT: -${row.deficit}</span>` :
-                                                    '<span class="badge badge-tool">✅ ADEQUATE</span>';
+                                const statusBadge = isCritical ? `<span class="badge badge-danger">DEFICIT: -${row.deficit}</span>` :
+                                                    isModerate ? `<span class="badge badge-warning">DEFICIT: -${row.deficit}</span>` :
+                                                    '<span class="badge badge-tool">ADEQUATE</span>';
                                 return `
                                     <tr>
                                         <td>
@@ -1744,7 +1744,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const avatar = document.createElement('div');
         avatar.className = `avatar ${role === 'user' ? 'user-avatar' : 'ai-avatar'}`;
-        avatar.innerHTML = role === 'user' ? '👤' : '🦙';
+        avatar.innerHTML = role === 'user' ? 'User' : 'AI';
 
         const content = document.createElement('div');
         content.className = 'message-content';
@@ -1762,7 +1762,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const avatar = document.createElement('div');
         avatar.className = 'avatar ai-avatar';
-        avatar.innerHTML = '🦙';
+        avatar.innerHTML = 'AI';
 
         const content = document.createElement('div');
         content.className = 'message-content';
@@ -1779,14 +1779,14 @@ document.addEventListener('DOMContentLoaded', () => {
             data.toolsInvoked.forEach(tool => {
                 const toolBadge = document.createElement('span');
                 toolBadge.className = 'badge badge-tool';
-                toolBadge.textContent = `🛠️ ${tool.toolName} (${tool.executionDurationMs}ms)`;
+                toolBadge.textContent = `${tool.toolName} (${tool.executionDurationMs}ms)`;
                 metaDiv.appendChild(toolBadge);
             });
 
             if (data.grounded) {
                 const groundedBadge = document.createElement('span');
                 groundedBadge.className = 'badge badge-grounded';
-                groundedBadge.textContent = '🔒 Database Grounded';
+                groundedBadge.textContent = 'Database Grounded';
                 metaDiv.appendChild(groundedBadge);
             }
 
@@ -1805,7 +1805,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const avatar = document.createElement('div');
         avatar.className = 'avatar ai-avatar';
-        avatar.innerHTML = '⚠️';
+        avatar.innerHTML = '!';
 
         const content = document.createElement('div');
         content.className = 'message-content';
@@ -1826,7 +1826,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const avatar = document.createElement('div');
         avatar.className = 'avatar ai-avatar';
-        avatar.innerHTML = '🦙';
+        avatar.innerHTML = 'AI';
 
         const content = document.createElement('div');
         content.className = 'message-content';
