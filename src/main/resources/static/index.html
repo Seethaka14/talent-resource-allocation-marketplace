@@ -32,65 +32,269 @@
         </div>
     </div>
 
-    <!-- Navbar -->
-    <header class="navbar">
-        <div class="nav-container">
-            <a href="/" class="brand" aria-label="Talent Marketplace Home">
+    <div class="app-layout">
+        <!-- Mobile Top Navigation Bar (Visible on screens <= 992px) -->
+        <header class="mobile-topbar" id="mobileTopbar">
+            <button type="button" class="sidebar-toggle-btn" id="sidebarToggleBtn" aria-label="Toggle navigation drawer">
+                <svg class="mobile-menu-icon" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+            <div class="mobile-brand">
                 <div class="brand-icon"><span style="font-size:0.85rem; font-weight:800; color:#fff;">TRM</span></div>
-                <div class="brand-text">
-                    <h1>Talent Marketplace</h1>
-                    <p>Agentic Resource Matching & Allocation</p>
-                </div>
-            </a>
+                <span class="mobile-brand-title">Talent Marketplace</span>
+            </div>
+            <div class="mobile-ollama-pill" id="mobileOllamaStatusPill" title="Ollama Service Status">
+                <span class="pulse-dot" id="mobileStatusDot"></span>
+            </div>
+        </header>
 
-            <!-- Screen Navigation Tabs -->
-            <nav class="nav-tabs" aria-label="Primary Application Navigation">
-                <button class="nav-tab active" data-screen="demand-intake" id="navTabDemandIntake">
-                    
-                    <span class="tab-label">Demand Intake</span>
+        <!-- Mobile Drawer Backdrop Overlay -->
+        <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+
+        <!-- Vertical Fixed Navigation Sidebar (Width ~250px) -->
+        <aside class="app-sidebar" id="appSidebar" aria-label="Application Navigation">
+            <div class="sidebar-header">
+                <a href="/" class="brand" aria-label="Talent Marketplace Home">
+                    <div class="brand-icon"><span style="font-size:0.85rem; font-weight:800; color:#fff;">TRM</span></div>
+                    <div class="brand-text">
+                        <h1>Talent Marketplace</h1>
+                        <p>Agentic Resource Matching</p>
+                    </div>
+                </a>
+                <button type="button" class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close navigation sidebar">&times;</button>
+            </div>
+
+            <!-- Screen Navigation Items -->
+            <nav class="sidebar-nav" aria-label="Primary Application Navigation">
+                <div class="nav-section-label">OVERVIEW</div>
+
+                <button class="nav-tab active" data-screen="dashboard" id="navTabDashboard">
+                    <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+                        <rect x="3" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="3" width="7" height="7"></rect>
+                        <rect x="14" y="14" width="7" height="7"></rect>
+                        <rect x="3" y="14" width="7" height="7"></rect>
+                    </svg>
+                    <span class="tab-label">Dashboard</span>
                 </button>
+
+                <div class="nav-section-label" style="margin-top:0.6rem;">TALENT &amp; ALLOCATIONS</div>
+
+                <button class="nav-tab" data-screen="demand-intake" id="navTabDemandIntake">
+                    <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    <span class="tab-label">Project Demands</span>
+                </button>
+
                 <button class="nav-tab" data-screen="skills-matrix" id="navTabSkillsMatrix">
-                    
-                    <span class="tab-label">Skills Matrix</span>
+                    <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    <span class="tab-label">Employee Skills Matrix</span>
                 </button>
+
                 <button class="nav-tab" data-screen="resource-ranking" id="navTabResourceRanking">
-                    
+                    <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    </svg>
                     <span class="tab-label">Resource Ranking</span>
                 </button>
+
                 <button class="nav-tab" data-screen="candidate-comparison" id="navTabCandidateComparison">
-                    
-                    <span class="tab-label">Comparison</span>
+                    <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+                        <line x1="18" y1="20" x2="18" y2="10"></line>
+                        <line x1="12" y1="20" x2="12" y2="4"></line>
+                        <line x1="6" y1="20" x2="6" y2="14"></line>
+                    </svg>
+                    <span class="tab-label">Candidate Comparison</span>
                 </button>
+
                 <button class="nav-tab" data-screen="allocation-approvals" id="navTabAllocationApprovals">
-                    
-                    <span class="tab-label">Allocations</span>
+                    <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    <span class="tab-label">Allocation Approvals</span>
                 </button>
+
                 <button class="nav-tab" data-screen="utilization-dashboard" id="navTabUtilizationDashboard">
-                    
-                    <span class="tab-label">Utilization & Gaps</span>
+                    <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span class="tab-label">Utilization &amp; Skill Gaps</span>
                 </button>
+
+                <div class="nav-section-label" style="margin-top:0.6rem;">INTELLIGENCE</div>
+
                 <button class="nav-tab" data-screen="ai-assistant" id="navTabAiAssistant">
-                    
+                    <svg class="nav-icon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+                        <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                        <rect x="9" y="9" width="6" height="6"></rect>
+                        <line x1="9" y1="1" x2="9" y2="4"></line>
+                        <line x1="15" y1="1" x2="15" y2="4"></line>
+                        <line x1="9" y1="20" x2="9" y2="23"></line>
+                        <line x1="15" y1="20" x2="15" y2="23"></line>
+                        <line x1="20" y1="9" x2="23" y2="9"></line>
+                        <line x1="20" y1="14" x2="23" y2="14"></line>
+                        <line x1="1" y1="9" x2="4" y2="9"></line>
+                        <line x1="1" y1="14" x2="4" y2="14"></line>
+                    </svg>
                     <span class="tab-label">AI Assistant</span>
                 </button>
             </nav>
 
-            <div class="status-badge-container">
+            <div class="sidebar-footer">
                 <div class="ollama-badge" id="ollamaStatusPill" title="Ollama Service Status">
                     <span class="pulse-dot" id="statusDot"></span>
                     <span id="statusText">Checking Ollama...</span>
                 </div>
+                <div class="sidebar-meta">
+                    <span class="meta-badge">v2.4 Production</span>
+                    <span class="meta-sub">Safe Concurrency</span>
+                </div>
             </div>
-        </div>
-    </header>
+        </aside>
 
-    <!-- Main Container -->
-    <main class="main-content" id="mainAppContent">
+        <!-- Main Content Area on the Right -->
+        <div class="main-content-wrapper">
+            <main class="main-content" id="mainAppContent">
 
-        <!-- ========================================== -->
-        <!-- SCREEN 1: DEMAND INTAKE                    -->
-        <!-- ========================================== -->
-        <section id="screen-demand-intake" class="app-screen active" aria-labelledby="headingDemandIntake">
+                <!-- ========================================== -->
+                <!-- SCREEN 0: EXECUTIVE DASHBOARD OVERVIEW     -->
+                <!-- ========================================== -->
+                <section id="screen-dashboard" class="app-screen active" aria-labelledby="headingDashboard">
+                    <div class="screen-header">
+                        <div>
+                            <h2 id="headingDashboard">Marketplace Executive Dashboard</h2>
+                            <p class="screen-subtitle">Comprehensive operational overview across open demands, talent capacity, allocations, and agentic AI services.</p>
+                        </div>
+                        <div class="header-actions">
+                            <button type="button" class="btn btn-secondary" id="btnRefreshDashboardSummary">Refresh Overview</button>
+                        </div>
+                    </div>
+
+                    <!-- Top KPI Metrics Cards -->
+                    <div class="metric-cards-grid">
+                        <div class="metric-card">
+                            <div class="metric-info">
+                                <span class="metric-title">Active Talent Headcount</span>
+                                <h3 class="metric-value" id="dashKpiEmployees">11</h3>
+                                <span class="metric-sub" id="dashKpiEmployeesSub">Across Engineering &amp; Platform</span>
+                            </div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-info">
+                                <span class="metric-title">Open Project Demands</span>
+                                <h3 class="metric-value" id="dashKpiDemands">5</h3>
+                                <span class="metric-sub" id="dashKpiDemandsSub">Pending allocation</span>
+                            </div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-info">
+                                <span class="metric-title">Active Allocations</span>
+                                <h3 class="metric-value" id="dashKpiAllocations">0</h3>
+                                <span class="metric-sub" id="dashKpiAllocationsSub">Confirmed &amp; pending</span>
+                            </div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="metric-info">
+                                <span class="metric-title">AI Staffing Engine</span>
+                                <h3 class="metric-value" style="color:var(--accent-success);">Active</h3>
+                                <span class="metric-sub">llama3.2:3b &middot; 6 Grounded Tools</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Navigation Launchpad -->
+                    <div class="dashboard-launchpad-grid">
+                        <div class="card launchpad-card" onclick="window.switchScreenTo('demand-intake')" style="cursor: pointer;">
+                            <div class="launchpad-icon">
+                                <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                            </div>
+                            <div class="launchpad-content">
+                                <h4>Project Demand Intake</h4>
+                                <p>Create structured demands with mandatory skills, proficiency thresholds, and timeline windows.</p>
+                                <span class="launchpad-link">Manage Demands &rarr;</span>
+                            </div>
+                        </div>
+
+                        <div class="card launchpad-card" onclick="window.switchScreenTo('resource-ranking')" style="cursor: pointer;">
+                            <div class="launchpad-icon">
+                                <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                            </div>
+                            <div class="launchpad-content">
+                                <h4>Deterministic Resource Ranking</h4>
+                                <p>Score candidates using the authoritative Skills /70, Availability /20, and Location /10 formula.</p>
+                                <span class="launchpad-link">Rank Candidates &rarr;</span>
+                            </div>
+                        </div>
+
+                        <div class="card launchpad-card" onclick="window.switchScreenTo('allocation-approvals')" style="cursor: pointer;">
+                            <div class="launchpad-icon">
+                                <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                            </div>
+                            <div class="launchpad-content">
+                                <h4>Capacity &amp; Allocations</h4>
+                                <p>Review pending allocations with pessimistic write locking preventing concurrent over-allocations.</p>
+                                <span class="launchpad-link">Review Allocations &rarr;</span>
+                            </div>
+                        </div>
+
+                        <div class="card launchpad-card" onclick="window.switchScreenTo('ai-assistant')" style="cursor: pointer;">
+                            <div class="launchpad-icon">
+                                <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line></svg>
+                            </div>
+                            <div class="launchpad-content">
+                                <h4>Agentic AI Assistant</h4>
+                                <p>Natural language queries grounded against database services with strict read-only safety.</p>
+                                <span class="launchpad-link">Launch Assistant &rarr;</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Snapshot Tables -->
+                    <div class="grid-layout-2col" style="margin-top: 1.5rem;">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Active Project Demands Snapshot</h3>
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="window.switchScreenTo('demand-intake')">View All</button>
+                            </div>
+                            <div class="card-body scrollable-body" id="dashDemandsPreview">
+                                <div class="loading-state"><div class="spinner"></div><p>Loading demands...</p></div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Enterprise Talent Snapshot</h3>
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="window.switchScreenTo('skills-matrix')">View Roster</button>
+                            </div>
+                            <div class="card-body scrollable-body" id="dashEmployeesPreview">
+                                <div class="loading-state"><div class="spinner"></div><p>Loading roster...</p></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ========================================== -->
+                <!-- SCREEN 1: DEMAND INTAKE                    -->
+                <!-- ========================================== -->
+                <section id="screen-demand-intake" class="app-screen" aria-labelledby="headingDemandIntake">
             <div class="screen-header">
                 <div>
                     <h2 id="headingDemandIntake">Project Demand Intake</h2>
@@ -672,7 +876,9 @@
             </div>
         </section>
 
-    </main>
+            </main>
+        </div>
+    </div>
 
     <!-- Global Scripts -->
     <script src="/js/app.js"></script>

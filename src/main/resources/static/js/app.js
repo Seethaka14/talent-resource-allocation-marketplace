@@ -13,7 +13,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- Application State ---
     const state = {
-        activeScreen: 'demand-intake',
+        activeScreen: 'dashboard',
         skills: [],
         demands: [],
         employees: [],
@@ -31,6 +31,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const appScreens = document.querySelectorAll('.app-screen');
     const statusDot = document.getElementById('statusDot');
     const statusText = document.getElementById('statusText');
+    const mobileStatusDot = document.getElementById('mobileStatusDot');
+    const sidebar = document.getElementById('appSidebar');
+    const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+    const sidebarCloseBtn = document.getElementById('sidebarCloseBtn');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    const btnRefreshDashboardSummary = document.getElementById('btnRefreshDashboardSummary');
     const toast = document.getElementById('toastNotification');
     const actionModal = document.getElementById('actionModal');
     const modalTitle = document.getElementById('modalTitle');
@@ -120,22 +126,55 @@ document.addEventListener('DOMContentLoaded', () => {
         setupEventListeners();
         checkOllamaStatus();
         await loadInitialData();
-        renderScreen('demand-intake');
+        renderScreen(state.activeScreen || 'dashboard');
+    }
+
+    function openMobileSidebar() {
+        if (sidebar) sidebar.classList.add('open');
+        if (sidebarBackdrop) sidebarBackdrop.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeMobileSidebar() {
+        if (sidebar) sidebar.classList.remove('open');
+        if (sidebarBackdrop) sidebarBackdrop.classList.remove('active');
+        document.body.style.overflow = '';
     }
 
     function setupNavigation() {
-        navTabs.forEach(tab => {
+        const allNavTabs = document.querySelectorAll('.nav-tab');
+        allNavTabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 const targetScreen = tab.getAttribute('data-screen');
                 switchScreen(targetScreen);
+                closeMobileSidebar();
             });
+        });
+
+        if (sidebarToggleBtn) {
+            sidebarToggleBtn.addEventListener('click', openMobileSidebar);
+        }
+        if (sidebarCloseBtn) {
+            sidebarCloseBtn.addEventListener('click', closeMobileSidebar);
+        }
+        if (sidebarBackdrop) {
+            sidebarBackdrop.addEventListener('click', closeMobileSidebar);
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && sidebar && sidebar.classList.contains('open')) {
+                closeMobileSidebar();
+            }
         });
     }
 
     function switchScreen(screenId) {
         state.activeScreen = screenId;
 
-        navTabs.forEach(tab => {
+        const allNavTabs = document.querySelectorAll('.nav-tab');
+        const allAppScreens = document.querySelectorAll('.app-screen');
+
+        allNavTabs.forEach(tab => {
             if (tab.getAttribute('data-screen') === screenId) {
                 tab.classList.add('active');
             } else {
@@ -143,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        appScreens.forEach(screen => {
+        allAppScreens.forEach(screen => {
             if (screen.id === `screen-${screenId}`) {
                 screen.classList.add('active');
             } else {
@@ -154,8 +193,14 @@ document.addEventListener('DOMContentLoaded', () => {
         renderScreen(screenId);
     }
 
+    window.switchScreenTo = function(screenId) {
+        switchScreen(screenId);
+    };
+
     function renderScreen(screenId) {
-        if (screenId === 'demand-intake') {
+        if (screenId === 'dashboard') {
+            loadDashboardSummary();
+        } else if (screenId === 'demand-intake') {
             loadOpenDemandsList();
         } else if (screenId === 'skills-matrix') {
             loadSkillsMatrix();
@@ -169,6 +214,118 @@ document.addEventListener('DOMContentLoaded', () => {
             loadUtilizationDashboard();
         } else if (screenId === 'ai-assistant') {
             updateAiContextPrompts();
+        }
+    }
+
+    async function loadDashboardSummary() {
+        const dashEmployeesEl = document.getElementById('dashKpiEmployees');
+        const dashDemandsEl = document.getElementById('dashKpiDemands');
+        const dashAllocationsEl = document.getElementById('dashKpiAllocations');
+        const dashDemandsPreview = document.getElementById('dashDemandsPreview');
+        const dashEmployeesPreview = document.getElementById('dashEmployeesPreview');
+
+        if (state.employees && state.employees.length > 0 && dashEmployeesEl) {
+            dashEmployeesEl.textContent = state.employees.filter(e => e.status === 'ACTIVE').length;
+        }
+        if (state.demands && state.demands.length > 0 && dashDemandsEl) {
+            dashDemandsEl.textContent = state.demands.filter(d => d.status === 'OPEN').length;
+        }
+
+        try {
+            const allocRes = await fetch('/api/allocations');
+            if (allocRes.ok) {
+                const allocJson = await allocRes.json();
+                state.allocations = allocJson.data || [];
+                if (dashAllocationsEl) {
+                    dashAllocationsEl.textContent = state.allocations.filter(a => a.status === 'CONFIRMED' || a.status === 'PENDING').length;
+                }
+            }
+        } catch (e) {
+            console.warn('Dashboard allocations summary fetch error:', e);
+        }
+
+        if (dashDemandsPreview) {
+            if (!state.demands || state.demands.length === 0) {
+                dashDemandsPreview.innerHTML = '<div class="empty-state"><p>No open demands found.</p></div>';
+            } else {
+                const openDemands = state.demands.filter(d => d.status === 'OPEN').slice(0, 5);
+                dashDemandsPreview.innerHTML = `
+                    <table class="standard-table">
+                        <thead>
+                            <tr>
+                                <th>Demand</th>
+                                <th>Role &amp; Department</th>
+                                <th>Dates</th>
+                                <th>Allocation</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${openDemands.map(d => `
+                                <tr>
+                                    <td>
+                                        <strong>${escapeHtml(d.demandCode)}</strong>
+                                        <div style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(d.projectName)}</div>
+                                    </td>
+                                    <td>
+                                        <span>${escapeHtml(d.role)}</span>
+                                        <div style="font-size:0.72rem; color:var(--text-secondary);">${escapeHtml(d.department || '')}</div>
+                                    </td>
+                                    <td style="font-size:0.8rem;">
+                                        ${formatDate(d.startDate)} &ndash; ${formatDate(d.endDate)}
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-tool">${d.allocationPercentage}%</span>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-secondary btn-sm" onclick="window.marketplace.selectDemandForRanking(${d.id})">Evaluate</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            }
+        }
+
+        if (dashEmployeesPreview) {
+            if (!state.employees || state.employees.length === 0) {
+                dashEmployeesPreview.innerHTML = '<div class="empty-state"><p>No talent records loaded.</p></div>';
+            } else {
+                const emps = state.employees.slice(0, 5);
+                dashEmployeesPreview.innerHTML = `
+                    <table class="standard-table">
+                        <thead>
+                            <tr>
+                                <th>Resource</th>
+                                <th>Department</th>
+                                <th>Location</th>
+                                <th>Max Capacity</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${emps.map(emp => {
+                                const statusBadge = emp.status === 'ACTIVE' ? '<span class="badge badge-grounded">ACTIVE</span>' :
+                                                    emp.status === 'ON_LEAVE' ? '<span class="badge badge-warning">ON_LEAVE</span>' :
+                                                    '<span class="badge badge-danger">' + escapeHtml(emp.status) + '</span>';
+                                return `
+                                    <tr>
+                                        <td>
+                                            <strong>${escapeHtml(emp.fullName)}</strong>
+                                            <div style="font-size:0.72rem; color:var(--text-muted);">${escapeHtml(emp.employeeCode)}</div>
+                                        </td>
+                                        <td>${escapeHtml(emp.department)}</td>
+                                        <td>${escapeHtml(emp.location)}</td>
+                                        <td><strong>${emp.maxCapacityPercentage}%</strong></td>
+                                        <td>${statusBadge}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                `;
+            }
         }
     }
 
@@ -235,6 +392,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setupEventListeners() {
+        // Refresh Dashboard Summary
+        if (btnRefreshDashboardSummary) {
+            btnRefreshDashboardSummary.addEventListener('click', async () => {
+                await loadInitialData();
+                loadDashboardSummary();
+                showToast('Dashboard summary metrics refreshed', 'success');
+            });
+        }
+
         // Gen Demand Code
         btnGenDemandCode.addEventListener('click', () => {
             const rand = Math.floor(100 + Math.random() * 900);
@@ -1650,20 +1816,24 @@ document.addEventListener('DOMContentLoaded', () => {
             if (res.ok) {
                 const json = await res.json();
                 const data = json.data;
-                if (data.ollamaReachable) {
-                    statusDot.className = 'pulse-dot';
-                    statusText.textContent = `Local Ollama: ${data.model} (Active)`;
+                if (data && data.ollamaReachable) {
+                    if (statusDot) statusDot.className = 'pulse-dot';
+                    if (mobileStatusDot) mobileStatusDot.className = 'pulse-dot';
+                    if (statusText) statusText.textContent = `Local Ollama: ${data.model} (Active)`;
                 } else {
-                    statusDot.className = 'pulse-dot offline';
-                    statusText.textContent = `Local Ollama: ${data.model} (Offline)`;
+                    if (statusDot) statusDot.className = 'pulse-dot offline';
+                    if (mobileStatusDot) mobileStatusDot.className = 'pulse-dot offline';
+                    if (statusText) statusText.textContent = `Local Ollama: ${data ? data.model : 'Model'} (Offline)`;
                 }
             } else {
-                statusDot.className = 'pulse-dot offline';
-                statusText.textContent = 'Local Ollama: Offline';
+                if (statusDot) statusDot.className = 'pulse-dot offline';
+                if (mobileStatusDot) mobileStatusDot.className = 'pulse-dot offline';
+                if (statusText) statusText.textContent = 'Local Ollama: Offline';
             }
-        } catch (e) {
-            statusDot.className = 'pulse-dot offline';
-            statusText.textContent = 'Local Ollama: Disconnected';
+        } catch {
+            if (statusDot) statusDot.className = 'pulse-dot offline';
+            if (mobileStatusDot) mobileStatusDot.className = 'pulse-dot offline';
+            if (statusText) statusText.textContent = 'Local Ollama: Disconnected';
         }
     }
 
