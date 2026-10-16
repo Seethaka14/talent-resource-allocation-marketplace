@@ -21,9 +21,14 @@ public interface ProjectDemandRepository extends JpaRepository<ProjectDemand, Lo
     @Query("SELECT DISTINCT d FROM ProjectDemand d LEFT JOIN FETCH d.requiredSkills rs LEFT JOIN FETCH rs.skill WHERE d.id = :id")
     Optional<ProjectDemand> findByIdWithSkills(@Param("id") Long id);
 
+    @Query("SELECT DISTINCT d FROM ProjectDemand d LEFT JOIN FETCH d.requiredSkills rs LEFT JOIN FETCH rs.skill WHERE d.demandCode = :demandCode")
+    Optional<ProjectDemand> findByDemandCodeWithSkills(@Param("demandCode") String demandCode);
+
     boolean existsByDemandCode(String demandCode);
 
     boolean existsByDemandCodeAndIdNot(String demandCode, Long id);
+
+    List<ProjectDemand> findByDemandCodeStartingWith(String prefix);
 
     List<ProjectDemand> findByStatus(DemandStatus status);
 

@@ -32,6 +32,261 @@
         </div>
     </div>
 
+    <!-- Employee Project History & Availability Modal -->
+    <div id="employeeHistoryModal" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="employeeHistoryModalTitle">
+        <div class="modal-container modal-xl">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <div class="brand-icon" style="width: 36px; height: 36px; font-size: 0.9rem; font-weight: 700; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white;">EMP</div>
+                    <div>
+                        <h3 id="employeeHistoryModalTitle" style="margin: 0; font-size: 1.1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                            <span id="historyEmpName">Employee Details</span>
+                            <span id="historyEmpCode" style="font-size: 0.75rem; font-family: monospace; color: var(--text-secondary); background: rgba(99, 102, 241, 0.12); padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid rgba(99, 102, 241, 0.25);">EMP-000</span>
+                            <span id="historyEmpStatus" class="badge badge-tool">ACTIVE</span>
+                        </h3>
+                        <p id="historyEmpSubtitle" style="margin: 0.2rem 0 0 0; font-size: 0.75rem; color: var(--text-muted);">Engineering • Senior Software Engineer • New York</p>
+                    </div>
+                </div>
+                <button type="button" class="modal-close-btn" id="employeeHistoryModalCloseBtn" aria-label="Close dialog">&times;</button>
+            </div>
+            <div class="modal-body scrollable" id="employeeHistoryModalBody">
+                <!-- KPI Stat Cards -->
+                <div class="history-stat-grid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; margin-bottom: 1.25rem;">
+                    <div class="history-stat-card" style="background: rgba(30, 41, 59, 0.6); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.85rem;">
+                        <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">Configured Capacity</div>
+                        <div id="statConfiguredCapacity" style="font-size: 1.35rem; font-weight: 700; color: var(--text-primary); margin-top: 0.25rem;">100%</div>
+                        <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.2rem;">Contracted Maximum</div>
+                    </div>
+                    <div class="history-stat-card" style="background: rgba(30, 41, 59, 0.6); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.85rem;">
+                        <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">Committed Active</div>
+                        <div id="statCommittedActive" style="font-size: 1.35rem; font-weight: 700; color: #a5b4fc; margin-top: 0.25rem;">0%</div>
+                        <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.2rem;">Confirmed Allocations</div>
+                    </div>
+                    <div class="history-stat-card" style="background: rgba(30, 41, 59, 0.6); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.85rem;">
+                        <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">Remaining Capacity</div>
+                        <div id="statRemainingCapacity" style="font-size: 1.35rem; font-weight: 700; color: #34d399; margin-top: 0.25rem;">100%</div>
+                        <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.2rem;">Available for Staffing</div>
+                    </div>
+                    <div class="history-stat-card" style="background: rgba(30, 41, 59, 0.6); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.85rem;">
+                        <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.05em;">Pending Proposals</div>
+                        <div id="statPendingCount" style="font-size: 1.35rem; font-weight: 700; color: #fbbf24; margin-top: 0.25rem;">0</div>
+                        <div style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.2rem;">Pipeline Requests</div>
+                    </div>
+                </div>
+
+                <!-- Sub-Navigation Tabs inside Modal -->
+                <div class="modal-nav-tabs" style="display: flex; gap: 0.5rem; border-bottom: 1px solid var(--border-color); margin-bottom: 1rem; padding-bottom: 0.5rem;">
+                    <button type="button" class="btn btn-sm btn-secondary modal-tab-btn active" data-tab="tab-project-history" id="btnTabProjectHistory">Project Allocation History</button>
+                    <button type="button" class="btn btn-sm btn-secondary modal-tab-btn" data-tab="tab-availability-checker" id="btnTabAvailabilityChecker">Availability &amp; Capacity Checker</button>
+                    <button type="button" class="btn btn-sm btn-secondary modal-tab-btn" data-tab="tab-leaves" id="btnTabLeaves">Leaves &amp; Unavailabilities</button>
+                    <button type="button" class="btn btn-sm btn-secondary modal-tab-btn" data-tab="tab-skills" id="btnTabSkills">Verified Skills</button>
+                </div>
+
+                <!-- Tab 1: Project Allocation History -->
+                <div class="modal-tab-pane" id="pane-tab-project-history" style="display: block;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+                        <h4 style="margin: 0; font-size: 0.9rem; color: var(--text-primary);">Project Allocations &amp; Engagements</h4>
+                        <span id="historyAllocCount" style="font-size: 0.75rem; color: var(--text-secondary);">0 records</span>
+                    </div>
+                    <div class="table-responsive" id="historyAllocationsTableContainer">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Tab 2: Availability & Capacity Checker -->
+                <div class="modal-tab-pane" id="pane-tab-availability-checker" style="display: none;">
+                    <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 1rem;">
+                        <h4 style="margin: 0 0 0.5rem 0; font-size: 0.9rem; color: var(--text-primary);">Test Date-Range Availability &amp; Capacity Overlap</h4>
+                        <p style="margin: 0 0 0.85rem 0; font-size: 0.75rem; color: var(--text-muted);">
+                            Evaluate inclusive date-range overlap, critical-date peak allocation, and confirmed vs pending capacity reservations.
+                        </p>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 0.75rem; align-items: flex-end;">
+                            <div>
+                                <label for="histCheckStartDate" style="display: block; font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Start Date</label>
+                                <input type="date" id="histCheckStartDate" class="form-control" style="font-size: 0.8rem; padding: 0.4rem 0.6rem;">
+                            </div>
+                            <div>
+                                <label for="histCheckEndDate" style="display: block; font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 0.25rem;">End Date</label>
+                                <input type="date" id="histCheckEndDate" class="form-control" style="font-size: 0.8rem; padding: 0.4rem 0.6rem;">
+                            </div>
+                            <div>
+                                <label for="histCheckPercent" style="display: block; font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 0.25rem;">Requested Allocation %</label>
+                                <input type="number" id="histCheckPercent" min="1" max="100" value="100" class="form-control" style="font-size: 0.8rem; padding: 0.4rem 0.6rem;">
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-primary btn-sm" id="btnRunHistoryCheck" style="padding: 0.5rem 1rem;">Assess Availability</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="histCheckResultContainer">
+                        <!-- Dynamic assessment result rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Tab 3: Leaves & Unavailabilities -->
+                <div class="modal-tab-pane" id="pane-tab-leaves" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+                        <h4 style="margin: 0; font-size: 0.9rem; color: var(--text-primary);">Scheduled Leaves &amp; Calendar Absences</h4>
+                        <span id="historyLeavesCount" style="font-size: 0.75rem; color: var(--text-secondary);">0 records</span>
+                    </div>
+                    <div class="table-responsive" id="historyLeavesTableContainer">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <!-- Tab 4: Verified Skills -->
+                <div class="modal-tab-pane" id="pane-tab-skills" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+                        <h4 style="margin: 0; font-size: 0.9rem; color: var(--text-primary);">Verified Technical Competencies &amp; Experience</h4>
+                        <span id="historySkillsCount" style="font-size: 0.75rem; color: var(--text-secondary);">0 skills</span>
+                    </div>
+                    <div id="historySkillsContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.75rem;">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 0.75rem; color: var(--text-muted);">
+                    Policy: CONFIRMED allocations reserve hard capacity. PENDING proposals do not lock out other demands.
+                </div>
+                <button type="button" class="btn btn-secondary" id="employeeHistoryModalDismissBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Project Demand Modal -->
+    <div id="editDemandModal" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="editDemandModalTitle">
+        <div class="modal-container modal-lg">
+            <div class="modal-header">
+                <div>
+                    <h3 id="editDemandModalTitle" style="margin: 0; font-size: 1.1rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+                        <span>Edit Project Demand</span>
+                        <code id="editDemandCodeBadge" style="font-size: 0.85rem; padding: 0.15rem 0.5rem; background: rgba(99, 102, 241, 0.15); color: #818cf8; border-radius: 4px;">DEM-CODE</code>
+                    </h3>
+                    <p style="font-size: 0.75rem; color: var(--text-secondary); margin: 0.2rem 0 0 0;">Update demand attributes, allocation requirement, and required technical skills.</p>
+                </div>
+                <button type="button" class="modal-close-btn" id="editDemandModalCloseBtn" aria-label="Close dialog">&times;</button>
+            </div>
+            <div class="modal-body scrollable" style="max-height: 70vh; padding: 1.25rem;">
+                <form id="editDemandForm" novalidate>
+                    <input type="hidden" id="editDemandId">
+                    <div id="editDemandFormErrorBanner" class="error-banner" style="display: none;" role="alert"></div>
+                    <div id="editDemandFormSuccessBanner" class="success-banner" style="display: none;" role="status"></div>
+
+                    <div class="form-row form-row-2">
+                        <div class="form-group">
+                            <label for="editProjectName">Project Name <span class="required">*</span></label>
+                            <input type="text" id="editProjectName" required maxlength="100">
+                        </div>
+                        <div class="form-group">
+                            <label for="editDemandRole">Role / Title <span class="required">*</span></label>
+                            <input type="text" id="editDemandRole" required maxlength="50">
+                        </div>
+                    </div>
+
+                    <div class="form-row form-row-2">
+                        <div class="form-group">
+                            <label for="editDemandDepartment">Department</label>
+                            <select id="editDemandDepartment">
+                                <option value="Engineering">Engineering</option>
+                                <option value="Platform">Platform</option>
+                                <option value="Data & Analytics">Data & Analytics</option>
+                                <option value="Product">Product</option>
+                                <option value="Quality Engineering">Quality Engineering</option>
+                                <option value="Security">Security</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editDemandLocation">Location <span class="required">*</span></label>
+                            <input type="text" id="editDemandLocation" required maxlength="100">
+                        </div>
+                    </div>
+
+                    <div class="form-row form-row-2">
+                        <div class="form-group">
+                            <label for="editDemandPriority">Priority <span class="required">*</span></label>
+                            <select id="editDemandPriority" required>
+                                <option value="LOW">LOW</option>
+                                <option value="MEDIUM">MEDIUM</option>
+                                <option value="HIGH">HIGH</option>
+                                <option value="CRITICAL">CRITICAL</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editDemandStatus">Status <span class="required">*</span></label>
+                            <select id="editDemandStatus" required>
+                                <option value="OPEN">OPEN</option>
+                                <option value="MATCHED">MATCHED</option>
+                                <option value="ALLOCATED">ALLOCATED</option>
+                                <option value="CANCELLED">CANCELLED</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row form-row-3">
+                        <div class="form-group">
+                            <label for="editDemandStartDate">Start Date <span class="required">*</span></label>
+                            <input type="date" id="editDemandStartDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editDemandEndDate">End Date <span class="required">*</span></label>
+                            <input type="date" id="editDemandEndDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editDemandAllocationPercent">Allocation % <span class="required">*</span></label>
+                            <input type="number" id="editDemandAllocationPercent" min="1" max="100" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editDemandExperience">Required Experience (Years)</label>
+                        <input type="number" id="editDemandExperience" min="0" max="40" step="0.5">
+                    </div>
+
+                    <!-- Skill Requirements Sub-Section in Edit Modal -->
+                    <div class="form-section-divider">
+                        <h4>Required Skills</h4>
+                        <p class="form-section-sub">Add or remove skills and define minimum proficiency requirements.</p>
+                    </div>
+
+                    <div class="skill-builder-row">
+                        <div class="form-group flex-2">
+                            <label for="editSkillSelect">Select Skill</label>
+                            <select id="editSkillSelect">
+                                <option value="">-- Choose Skill --</option>
+                            </select>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="editSkillProficiency">Min Proficiency</label>
+                            <select id="editSkillProficiency">
+                                <option value="BEGINNER">BEGINNER</option>
+                                <option value="INTERMEDIATE" selected>INTERMEDIATE</option>
+                                <option value="ADVANCED">ADVANCED</option>
+                            </select>
+                        </div>
+                        <div class="form-group flex-checkbox">
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="editSkillMandatory" checked>
+                                <span class="checkbox-label">Mandatory</span>
+                            </label>
+                        </div>
+                        <div class="form-group flex-action">
+                            <button type="button" id="btnEditAddSkillReq" class="btn btn-secondary btn-sm">+ Add Skill</button>
+                        </div>
+                    </div>
+
+                    <div id="editRequiredSkillsChipsContainer" class="skills-chips-wrapper">
+                        <p class="text-muted text-sm" id="editEmptySkillsPrompt">No skill requirements added yet.</p>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+                <button type="button" class="btn btn-secondary" id="editDemandModalCancelBtn">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnSaveEditedDemand">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
     <div class="app-layout">
         <!-- Mobile Top Navigation Bar (Visible on screens <= 992px) -->
         <header class="mobile-topbar" id="mobileTopbar">
@@ -156,6 +411,22 @@
             </nav>
 
             <div class="sidebar-footer">
+                <div class="user-profile-badge" id="userProfileBadge">
+                    <div class="user-profile-info">
+                        <div class="user-avatar-circle" id="userAvatarText">PM</div>
+                        <div class="user-meta-details">
+                            <div class="user-display-name" id="userDisplayName">Project Manager</div>
+                            <div class="user-role-label" id="userRoleBadge">PROJECT_MANAGER</div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-logout" id="btnLogout" title="Sign Out" aria-label="Sign Out">
+                        <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                    </button>
+                </div>
                 <div class="ollama-badge" id="ollamaStatusPill" title="Ollama Service Status">
                     <span class="pulse-dot" id="statusDot"></span>
                     <span id="statusText">Checking Ollama...</span>
@@ -220,72 +491,41 @@
                         </div>
                     </div>
 
-                    <!-- Quick Navigation Launchpad -->
-                    <div class="dashboard-launchpad-grid">
-                        <div class="card launchpad-card" onclick="window.switchScreenTo('demand-intake')" style="cursor: pointer;">
-                            <div class="launchpad-icon">
-                                <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+                    <!-- Workspace Overview (Full Width with Sub-Tabs) -->
+                    <div class="card workspace-overview-card" style="margin-top: 1.5rem;">
+                        <div class="card-header workspace-overview-header">
+                            <div class="overview-header-left">
+                                <h3 style="margin: 0; font-size: 1.05rem; font-weight: 600;">Workspace Overview</h3>
+                                <div class="workspace-tabs" role="tablist" aria-label="Workspace Overview Tabs">
+                                    <button type="button" class="workspace-tab-btn active" id="tabBtnDashDemands" data-dash-tab="demands" role="tab" aria-selected="true" aria-controls="dashDemandsPane">
+                                        Project Demands
+                                    </button>
+                                    <button type="button" class="workspace-tab-btn" id="tabBtnDashEmployees" data-dash-tab="employees" role="tab" aria-selected="false" aria-controls="dashEmployeesPane">
+                                        Employee Roster
+                                    </button>
+                                </div>
                             </div>
-                            <div class="launchpad-content">
-                                <h4>Project Demand Intake</h4>
-                                <p>Create structured demands with mandatory skills, proficiency thresholds, and timeline windows.</p>
-                                <span class="launchpad-link">Manage Demands &rarr;</span>
-                            </div>
-                        </div>
-
-                        <div class="card launchpad-card" onclick="window.switchScreenTo('resource-ranking')" style="cursor: pointer;">
-                            <div class="launchpad-icon">
-                                <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                            </div>
-                            <div class="launchpad-content">
-                                <h4>Deterministic Resource Ranking</h4>
-                                <p>Score candidates using the authoritative Skills /70, Availability /20, and Location /10 formula.</p>
-                                <span class="launchpad-link">Rank Candidates &rarr;</span>
+                            <div class="overview-header-right">
+                                <button type="button" class="btn btn-secondary btn-sm" id="btnDashViewAllAction" onclick="window.switchScreenTo('demand-intake')">
+                                    View Full Demands &rarr;
+                                </button>
                             </div>
                         </div>
 
-                        <div class="card launchpad-card" onclick="window.switchScreenTo('allocation-approvals')" style="cursor: pointer;">
-                            <div class="launchpad-icon">
-                                <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                        <!-- Tab Panes -->
+                        <div class="workspace-tab-content">
+                            <!-- Pane 1: Project Demands Table (Full Width) -->
+                            <div class="workspace-tab-pane active" id="dashDemandsPane" role="tabpanel" aria-labelledby="tabBtnDashDemands">
+                                <div class="table-responsive" id="dashDemandsPreview">
+                                    <div class="loading-state"><div class="spinner"></div><p>Loading project demands...</p></div>
+                                </div>
                             </div>
-                            <div class="launchpad-content">
-                                <h4>Capacity &amp; Allocations</h4>
-                                <p>Review pending allocations with pessimistic write locking preventing concurrent over-allocations.</p>
-                                <span class="launchpad-link">Review Allocations &rarr;</span>
-                            </div>
-                        </div>
 
-                        <div class="card launchpad-card" onclick="window.switchScreenTo('ai-assistant')" style="cursor: pointer;">
-                            <div class="launchpad-icon">
-                                <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line></svg>
-                            </div>
-                            <div class="launchpad-content">
-                                <h4>Agentic AI Assistant</h4>
-                                <p>Natural language queries grounded against database services with strict read-only safety.</p>
-                                <span class="launchpad-link">Launch Assistant &rarr;</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Quick Snapshot Tables -->
-                    <div class="grid-layout-2col" style="margin-top: 1.5rem;">
-                        <div class="card">
-                            <div class="card-header">
-                                <h3>Active Project Demands Snapshot</h3>
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="window.switchScreenTo('demand-intake')">View All</button>
-                            </div>
-                            <div class="card-body scrollable-body" id="dashDemandsPreview">
-                                <div class="loading-state"><div class="spinner"></div><p>Loading demands...</p></div>
-                            </div>
-                        </div>
-
-                        <div class="card">
-                            <div class="card-header">
-                                <h3>Enterprise Talent Snapshot</h3>
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="window.switchScreenTo('skills-matrix')">View Roster</button>
-                            </div>
-                            <div class="card-body scrollable-body" id="dashEmployeesPreview">
-                                <div class="loading-state"><div class="spinner"></div><p>Loading roster...</p></div>
+                            <!-- Pane 2: Employee Roster Table (Full Width) -->
+                            <div class="workspace-tab-pane" id="dashEmployeesPane" role="tabpanel" aria-labelledby="tabBtnDashEmployees" style="display: none;">
+                                <div class="table-responsive" id="dashEmployeesPreview">
+                                    <div class="loading-state"><div class="spinner"></div><p>Loading employee roster...</p></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -303,8 +543,20 @@
                 <button type="button" class="btn btn-secondary" id="btnRefreshDemands">Refresh Demands</button>
             </div>
 
-            <div class="grid-layout-2col">
-                <!-- Demand Creation Form Card -->
+            <!-- Project Demands Horizontal Tab Navigation -->
+            <div class="demands-tab-nav-bar" style="margin-bottom: 1.5rem;">
+                <div class="workspace-tabs" role="tablist" aria-label="Project Demand Tabs">
+                    <button type="button" class="workspace-tab-btn active" id="tabBtnCreateDemand" role="tab" aria-selected="true" aria-controls="paneCreateDemand">
+                        Create Demand
+                    </button>
+                    <button type="button" class="workspace-tab-btn" id="tabBtnOpenDemands" role="tab" aria-selected="false" aria-controls="paneOpenDemands">
+                        Open Demands (<span id="openDemandsCountTab">0</span>)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tab 1: Create Demand (Full Available Content Width) -->
+            <div id="paneCreateDemand" class="demand-tab-pane active" role="tabpanel" aria-labelledby="tabBtnCreateDemand">
                 <div class="card form-card">
                     <div class="card-header">
                         <h3>New Project Demand</h3>
@@ -318,12 +570,12 @@
 
                         <div class="form-row form-row-2">
                             <div class="form-group">
-                                <label for="demandCode">Demand Code <span class="required">*</span></label>
-                                <div class="input-with-action">
-                                    <input type="text" id="demandCode" name="demandCode" required maxlength="30" placeholder="e.g. DEM-2026-001" pattern="^[A-Za-z0-9_-]{3,30}$">
-                                    <button type="button" id="btnGenDemandCode" class="btn-input-addon" title="Auto-generate demand code">Auto</button>
-                                </div>
-                                <small class="form-hint">3-30 letters, numbers, hyphens or underscores.</small>
+                                <label for="demandCode">
+                                    Demand Code
+                                    <span class="badge-auto" id="demandCodeStatusBadge">Auto-Generated</span>
+                                </label>
+                                <input type="text" id="demandCode" name="demandCode" readonly class="input-readonly" placeholder="DEM-2026-XXXX (Assigned on creation)">
+                                <small class="form-hint" id="demandCodeHint">Assigned automatically by the system upon creation.</small>
                             </div>
 
                             <div class="form-group">
@@ -437,14 +689,22 @@
                         </div>
                     </form>
                 </div>
+            </div>
 
-                <!-- Existing Open Demands List Card -->
+            <!-- Tab 2: Open Demands (Full Available Content Width) -->
+            <div id="paneOpenDemands" class="demand-tab-pane" role="tabpanel" aria-labelledby="tabBtnOpenDemands" style="display: none;">
                 <div class="card">
                     <div class="card-header">
-                        <h3>Open Project Demands</h3>
-                        <span class="badge badge-tool" id="openDemandsCountBadge">0 Demands</span>
+                        <div>
+                            <h3 style="margin: 0; font-size: 1rem;">Open Project Demands</h3>
+                            <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">All active demands currently open for candidate matching and resource allocation.</p>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <span class="badge badge-tool" id="openDemandsCountBadge">0 Demands</span>
+                            <button type="button" class="btn btn-secondary btn-sm" id="btnRefreshDemandsList">Refresh List</button>
+                        </div>
                     </div>
-                    <div class="card-body scrollable-body" id="openDemandsListContainer">
+                    <div class="card-body" id="openDemandsListContainer">
                         <div class="loading-state"><div class="spinner"></div><p>Loading open demands...</p></div>
                     </div>
                 </div>
@@ -672,8 +932,8 @@
                 </div>
             </div>
 
-            <!-- Date Window Filter Bar -->
-            <div class="filter-bar" style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap; margin-bottom:1.5rem; background:rgba(30,41,59,0.5); padding:0.85rem 1.25rem; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
+            <!-- Date Window & Department Filter Bar -->
+            <div class="filter-bar" style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap; margin-bottom:1rem; background:rgba(30,41,59,0.5); padding:0.85rem 1.25rem; border-radius:var(--radius-sm); border:1px solid var(--border-color);">
                 <div style="display:flex; align-items:center; gap:0.5rem;">
                     <label for="utilFilterStartDate" style="font-size:0.85rem; font-weight:600; color:var(--text-secondary);">Window Start:</label>
                     <input type="date" id="utilFilterStartDate" class="form-input" style="padding:0.35rem 0.6rem; font-size:0.85rem; width:auto;">
@@ -688,72 +948,52 @@
                         <option value="">All Departments</option>
                     </select>
                 </div>
-                <button type="button" class="btn btn-primary" id="btnApplyUtilFilter" style="padding:0.4rem 0.9rem; font-size:0.85rem;">Apply Window</button>
+                <button type="button" class="btn btn-primary" id="btnApplyUtilFilter" style="padding:0.45rem 1rem; font-size:0.85rem;">Apply Filters</button>
                 <span id="utilWindowLabel" style="font-size:0.8rem; color:var(--text-muted); margin-left:auto;">Evaluation Window: 30 days</span>
             </div>
 
-            <!-- KPI Metric Cards -->
-            <div class="metric-cards-grid">
-                <div class="metric-card">
-                    
-                    <div class="metric-info">
-                        <span class="metric-title">Active Headcount</span>
-                        <h3 class="metric-value" id="kpiActiveEmployees">0</h3>
-                        <span class="metric-sub" id="kpiTotalEmployees">0 total employees</span>
-                    </div>
-                </div>
+            <!-- Validation Error Banner for Date Range -->
+            <div id="utilDateErrorBanner" class="error-banner" style="display: none; margin-bottom: 1rem;" role="alert"></div>
 
-                <div class="metric-card">
-                    
-                    <div class="metric-info">
-                        <span class="metric-title">Open Project Demands</span>
-                        <h3 class="metric-value" id="kpiOpenDemands">0</h3>
-                        <span class="metric-sub" id="kpiDemandedCapacity">0% required capacity</span>
-                    </div>
+            <!-- Analysis Horizontal Tabs -->
+            <div class="utilization-tabs-nav-bar" style="margin-bottom: 1.5rem;">
+                <div class="workspace-tabs" role="tablist" aria-label="Utilization Analysis Tabs">
+                    <button type="button" class="workspace-tab-btn active" id="tabBtnEmpUtilization" role="tab" aria-selected="true" aria-controls="paneEmpUtilization">
+                        Employee Utilization
+                    </button>
+                    <button type="button" class="workspace-tab-btn" id="tabBtnSkillGaps" role="tab" aria-selected="false" aria-controls="paneSkillGaps">
+                        Skill Gap Analysis
+                    </button>
                 </div>
+            </div>
 
-                <div class="metric-card">
-                    
-                    <div class="metric-info">
-                        <span class="metric-title">Confirmed Allocations</span>
-                        <h3 class="metric-value" id="kpiConfirmedAllocations">0</h3>
-                        <span class="metric-sub" id="kpiPendingAllocations">0 pending approval</span>
+            <!-- Tab 1: Employee Utilization (Full Available Width) -->
+            <div id="paneEmpUtilization" class="demand-tab-pane active" role="tabpanel" aria-labelledby="tabBtnEmpUtilization">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h3 style="margin:0; font-size:1rem;">Employee Capacity Utilization</h3>
+                            <p style="font-size:0.75rem; color:var(--text-muted); margin:0.2rem 0 0 0;">Peak simultaneous commitment vs. time-weighted average across evaluation window.</p>
+                        </div>
+                        <span class="badge badge-grounded">Date-Bounded Window</span>
                     </div>
-                </div>
-
-                <div class="metric-card">
-                    
-                    <div class="metric-info">
-                        <span class="metric-title">Avg Window Utilization</span>
-                        <h3 class="metric-value" id="kpiAvgUtilization">0%</h3>
-                        <span class="metric-sub">Peak / Time-Weighted Avg</span>
+                    <div class="card-body" id="utilizationListContainer">
+                        <div class="loading-state"><div class="spinner"></div><p>Calculating employee capacity utilization...</p></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Dashboard Split Layout: Utilization Table & Skill Gap Analysis -->
-            <div class="grid-layout-2col">
-                <!-- Section A: Employee Capacity Utilization -->
+            <!-- Tab 2: Skill Gap Analysis (Full Available Width) -->
+            <div id="paneSkillGaps" class="demand-tab-pane" role="tabpanel" aria-labelledby="tabBtnSkillGaps" style="display: none;">
                 <div class="card">
                     <div class="card-header">
                         <div>
-                            <h3 style="margin:0;">Employee Capacity Utilization</h3>
-                            <p style="font-size:0.75rem; color:var(--text-muted); margin:0.2rem 0 0 0;">Peak simultaneous commitment vs. time-weighted average across window</p>
+                            <h3 style="margin:0; font-size:1rem;">Skill Shortage &amp; Gap Analysis</h3>
+                            <p style="font-size:0.75rem; color:var(--text-muted); margin:0.2rem 0 0 0;">Organizational skill demand requirements vs. verified qualified employee supply.</p>
                         </div>
-                        <span class="badge badge-grounded">Date-Bounded Window</span>
-                    </div>
-                    <div class="card-body scrollable-body" id="utilizationListContainer">
-                        <div class="loading-state"><div class="spinner"></div><p>Calculating employee capacity utilization...</p></div>
-                    </div>
-                </div>
-
-                <!-- Section B: Enterprise Skill Gap Analysis -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3>Skill Shortage & Gap Analysis</h3>
                         <span class="badge badge-tool">Demand vs Supply</span>
                     </div>
-                    <div class="card-body scrollable-body" id="skillGapsListContainer">
+                    <div class="card-body" id="skillGapsListContainer">
                         <div class="loading-state"><div class="spinner"></div><p>Analyzing enterprise skill gaps...</p></div>
                     </div>
                 </div>

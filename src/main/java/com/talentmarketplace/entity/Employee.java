@@ -114,11 +114,9 @@ public class Employee {
         }
     }
 
-    // Default Constructor
     public Employee() {
     }
 
-    // Parameterized Constructor
     public Employee(String employeeCode,
                     String firstName,
                     String lastName,
@@ -156,8 +154,6 @@ public class Employee {
         this(employeeCode, firstName, lastName, email, department, designation, location, joiningDate, employmentStatus);
         this.maxCapacityPercent = maxCapacityPercent != null ? maxCapacityPercent : 100;
     }
-
-    // Getters and Setters
 
     public Long getId() {
         return id;

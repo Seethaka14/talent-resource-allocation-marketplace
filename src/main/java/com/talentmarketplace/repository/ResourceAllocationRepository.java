@@ -40,6 +40,31 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
            "WHERE a.id = :id")
     Optional<ResourceAllocation> findByIdWithDetails(@Param("id") Long id);
 
+    @Query("SELECT CASE WHEN COUNT(a) > 0 THEN true ELSE false END FROM ResourceAllocation a " +
+           "WHERE a.employee.id = :employeeId AND a.demand.id = :demandId AND a.status IN :statuses")
+    boolean existsActiveAllocationForEmployeeAndDemand(
+            @Param("employeeId") Long employeeId,
+            @Param("demandId") Long demandId,
+            @Param("statuses") java.util.Collection<AllocationStatus> statuses);
+
+    @Query("SELECT a FROM ResourceAllocation a " +
+           "JOIN FETCH a.employee " +
+           "WHERE a.demand.id = :demandId AND a.status IN :statuses")
+    List<ResourceAllocation> findByDemandIdAndStatusInWithEmployee(
+            @Param("demandId") Long demandId,
+            @Param("statuses") java.util.Collection<AllocationStatus> statuses);
+
+    @Query("SELECT a FROM ResourceAllocation a " +
+           "WHERE a.employee.id = :employeeId AND a.demand.id = :demandId AND a.status IN :statuses " +
+           "ORDER BY CASE a.status " +
+           "  WHEN com.talentmarketplace.entity.AllocationStatus.CONFIRMED THEN 1 " +
+           "  WHEN com.talentmarketplace.entity.AllocationStatus.PENDING THEN 2 " +
+           "  ELSE 3 END ASC, a.createdAt DESC")
+    List<ResourceAllocation> findActiveAllocationsForEmployeeAndDemand(
+            @Param("employeeId") Long employeeId,
+            @Param("demandId") Long demandId,
+            @Param("statuses") java.util.Collection<AllocationStatus> statuses);
+
     @Query("SELECT a FROM ResourceAllocation a " +
            "WHERE a.employee.id = :employeeId AND " +
            "a.status = com.talentmarketplace.entity.AllocationStatus.CONFIRMED AND " +
@@ -59,6 +84,16 @@ public interface ResourceAllocationRepository extends JpaRepository<ResourceAllo
     List<ResourceAllocation> findOverlappingConfirmedAllocationsExcludingId(
             @Param("employeeId") Long employeeId,
             @Param("excludeAllocationId") Long excludeAllocationId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT a FROM ResourceAllocation a " +
+           "WHERE a.employee.id = :employeeId AND " +
+           "a.status = com.talentmarketplace.entity.AllocationStatus.PENDING AND " +
+           "a.startDate <= :endDate AND a.endDate >= :startDate " +
+           "ORDER BY a.startDate ASC")
+    List<ResourceAllocation> findOverlappingPendingAllocations(
+            @Param("employeeId") Long employeeId,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate);
 

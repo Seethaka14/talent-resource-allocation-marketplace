@@ -31,8 +31,12 @@ import com.talentmarketplace.entity.Skill;
 
 class FlywayMigrationIntegrationTest {
 
-    private static final String DB_USER = "root";
-    private static final String DB_PASS = "password123";
+    private static final String DB_USER = System.getenv("SPRING_DATASOURCE_USERNAME") != null && !System.getenv("SPRING_DATASOURCE_USERNAME").isBlank()
+            ? System.getenv("SPRING_DATASOURCE_USERNAME")
+            : "root";
+    private static final String DB_PASS = System.getenv("SPRING_DATASOURCE_PASSWORD") != null
+            ? System.getenv("SPRING_DATASOURCE_PASSWORD")
+            : "";
     private static final String CLEAN_DB_NAME = "talent_migration_test";
     private static final String CLEAN_JDBC_URL = "jdbc:mysql://localhost:3306/" + CLEAN_DB_NAME + "?useSSL=false&allowPublicKeyRetrieval=true";
     private static final String ADOPT_DB_NAME = "talent_existing_adoption_test";
@@ -67,17 +71,17 @@ class FlywayMigrationIntegrationTest {
         MigrateResult result = flyway.migrate();
 
         assertThat(result.success).isTrue();
-        assertThat(result.migrationsExecuted).isEqualTo(1);
-        assertThat(result.targetSchemaVersion).isEqualTo("1");
+        assertThat(result.migrationsExecuted).isEqualTo(3);
+        assertThat(result.targetSchemaVersion).isEqualTo("3");
 
         // Verify flyway_schema_history
         MigrationInfo current = flyway.info().current();
         assertThat(current).isNotNull();
-        assertThat(current.getVersion().getVersion()).isEqualTo("1");
-        assertThat(current.getDescription()).isEqualTo("initial schema");
+        assertThat(current.getVersion().getVersion()).isEqualTo("3");
+        assertThat(current.getDescription()).isEqualTo("create demand code sequences table");
         assertThat(current.getChecksum()).isNotNull();
 
-        // 2. Verify all 7 domain tables and schema_history exist in MySQL
+        // 2. Verify all domain tables and schema_history exist in MySQL
         Set<String> tables = new HashSet<>();
         try (Connection conn = DriverManager.getConnection(CLEAN_JDBC_URL, DB_USER, DB_PASS);
              Statement stmt = conn.createStatement();
@@ -95,7 +99,9 @@ class FlywayMigrationIntegrationTest {
                 "employee_unavailabilities",
                 "project_demands",
                 "demand_skills",
-                "resource_allocations"
+                "resource_allocations",
+                "users",
+                "demand_code_sequences"
         );
 
         // 3. Verify Hibernate schema validation against the Flyway-generated schema
@@ -120,6 +126,8 @@ class FlywayMigrationIntegrationTest {
             metadataSources.addAnnotatedClass(ProjectDemand.class);
             metadataSources.addAnnotatedClass(DemandSkill.class);
             metadataSources.addAnnotatedClass(ResourceAllocation.class);
+            metadataSources.addAnnotatedClass(com.talentmarketplace.entity.User.class);
+            metadataSources.addAnnotatedClass(com.talentmarketplace.entity.DemandCodeSequence.class);
 
             // buildSessionFactory() runs Hibernate's schema validator on all entities
             try (var sessionFactory = metadataSources.buildMetadata().buildSessionFactory()) {

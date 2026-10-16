@@ -231,6 +231,78 @@ body {
     border: 1px solid rgba(99, 102, 241, 0.2);
 }
 
+.user-profile-badge {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.65rem 0.75rem;
+    background: rgba(30, 41, 59, 0.7);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    gap: 0.5rem;
+}
+
+.user-profile-info {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.user-avatar-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--accent-primary);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.user-meta-details {
+    min-width: 0;
+    overflow: hidden;
+}
+
+.user-display-name {
+    font-size: 0.825rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.user-role-label {
+    font-size: 0.7rem;
+    color: #818cf8;
+    font-weight: 500;
+}
+
+.btn-logout {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.35rem;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    flex-shrink: 0;
+}
+
+.btn-logout:hover {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
 .meta-sub {
     color: var(--text-muted);
     font-size: 0.7rem;
@@ -292,62 +364,150 @@ body {
 }
 
 /* ========================================== */
-/* Executive Dashboard (Screen 0) Components  */
+/* Executive Dashboard - Workspace Overview   */
 /* ========================================== */
-.dashboard-launchpad-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 1.25rem;
-    margin-top: 1.25rem;
-}
-
-.launchpad-card {
-    padding: 1.25rem;
-    display: flex;
-    gap: 1rem;
-    align-items: flex-start;
-    transition: var(--transition);
-    border: 1px solid var(--border-color);
+.workspace-overview-card {
     background: var(--bg-card);
-}
-
-.launchpad-card:hover {
-    transform: translateY(-2px);
-    border-color: var(--border-hover);
-    box-shadow: var(--shadow-glow);
-}
-
-.launchpad-icon {
-    width: 42px;
-    height: 42px;
+    border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
-    background: rgba(99, 102, 241, 0.15);
-    color: #a5b4fc;
+    box-shadow: var(--shadow-subtle);
+    overflow: hidden;
+}
+
+.workspace-overview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border-color);
+    background: rgba(19, 28, 46, 0.4);
+}
+
+.overview-header-left {
     display: flex;
     align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
+    gap: 1.25rem;
+    flex-wrap: wrap;
 }
 
-.launchpad-content h4 {
-    font-size: 0.95rem;
-    font-weight: 600;
+.workspace-tabs {
+    display: inline-flex;
+    background: rgba(15, 23, 42, 0.65);
+    padding: 0.25rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    gap: 0.25rem;
+}
+
+.workspace-tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 0.45rem 1rem;
+    font-size: 0.825rem;
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.workspace-tab-btn:hover {
     color: var(--text-primary);
-    margin-bottom: 0.35rem;
+    background: rgba(255, 255, 255, 0.05);
 }
 
-.launchpad-content p {
+.workspace-tab-btn.active {
+    background: var(--accent-primary);
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.35);
+}
+
+.workspace-tab-content {
+    width: 100%;
+}
+
+.workspace-tab-pane {
+    width: 100%;
+}
+
+.workspace-tab-pane .table-responsive {
+    border: none;
+    border-radius: 0;
+    margin: 0;
+}
+
+.demand-tab-pane {
+    width: 100%;
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+.demand-row-card {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 1.15rem 1.25rem;
+    margin-bottom: 0.85rem;
+    transition: var(--transition);
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.demand-row-card:hover {
+    border-color: rgba(99, 102, 241, 0.4);
+    background: rgba(30, 41, 59, 0.7);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Demand Card Header & Layout */
+.demand-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.25rem;
+    width: 100%;
+    flex-wrap: nowrap;
+}
+
+.demand-card-title-group {
+    flex: 1 1 auto;
+    min-width: 0; /* Ensures content wraps internally without forcing header wrap */
+}
+
+.demand-card-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap; /* Badges wrap naturally if title is long */
+}
+
+.demand-card-title {
+    color: var(--text-primary);
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 0;
+    line-height: 1.35;
+    word-break: break-word;
+}
+
+.demand-card-meta {
     font-size: 0.8rem;
     color: var(--text-secondary);
+    margin-top: 0.35rem;
     line-height: 1.4;
+    word-break: break-word;
 }
 
-.launchpad-link {
-    display: inline-block;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #818cf8;
-    margin-top: 0.5rem;
+.demand-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0; /* Keeps action buttons at fixed size aligned horizontally */
+    margin-left: auto;
+    white-space: nowrap;
 }
 
 .app-screen {
@@ -554,6 +714,31 @@ select:focus,
 textarea:focus {
     border-color: var(--accent-primary);
     box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+
+input[readonly],
+.input-readonly {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+    color: var(--text-secondary) !important;
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    cursor: default;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    letter-spacing: 0.02em;
+}
+
+.badge-auto {
+    background-color: rgba(99, 102, 241, 0.15);
+    color: #a5b4fc;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 9999px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 0.4rem;
 }
 
 .input-with-action {
@@ -1335,6 +1520,39 @@ textarea:focus {
     animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.modal-container.modal-xl {
+    max-width: 960px;
+    max-height: 90vh;
+}
+
+.modal-container.modal-lg {
+    max-width: 760px;
+    max-height: 90vh;
+}
+
+.modal-body.scrollable {
+    overflow-y: auto;
+    max-height: calc(90vh - 140px);
+}
+
+.modal-tab-btn.active {
+    background: var(--accent-primary) !important;
+    color: #ffffff !important;
+    border-color: var(--accent-primary) !important;
+}
+
+.clickable-emp-name {
+    cursor: pointer;
+    color: var(--accent-secondary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: color 0.15s ease;
+}
+
+.clickable-emp-name:hover {
+    color: #a5b4fc;
+}
+
 @keyframes modalPop {
     from { opacity: 0; transform: scale(0.95); }
     to { opacity: 1; transform: scale(1); }
@@ -1601,8 +1819,15 @@ textarea:focus {
         grid-template-columns: 1fr;
     }
 
-    .dashboard-launchpad-grid {
-        grid-template-columns: 1fr;
+    .workspace-overview-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    .overview-header-left {
+        width: 100%;
+        justify-content: space-between;
     }
 
     .screen-header {
@@ -1619,5 +1844,24 @@ textarea:focus {
 
     .table-responsive {
         border-radius: var(--radius-sm);
+    }
+
+    /* Deliberate responsive breakpoint for demand cards on smaller screens */
+    .demand-card-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    .demand-card-actions {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 0.5rem;
+        margin-left: 0;
+        padding-top: 0.4rem;
+        border-top: 1px solid rgba(148, 163, 184, 0.08);
     }
 }

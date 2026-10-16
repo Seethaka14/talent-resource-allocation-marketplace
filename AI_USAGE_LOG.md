@@ -11,9 +11,10 @@ This document records the architectural design, configuration, tool allowlisting
 - **Server Endpoint**: `http://localhost:11434`
 - **Application Configuration Properties** (`application.properties`):
   ```properties
-  ollama.base-url=http://localhost:11434
-  ollama.model=llama3.2:3b
+  ollama.base-url=${OLLAMA_BASE_URL:http://localhost:11434}
+  ollama.model=${OLLAMA_MODEL:llama3.2:3b}
   ollama.timeout-seconds=120
+  ollama.max-tool-iterations=3
   ```
 - **External Dependencies**: Zero external cloud API calls, zero commercial API keys, and zero external network transmissions. All inference executes locally on the host machine.
 - **Verification Status**:
@@ -104,10 +105,12 @@ To ensure compliance with enterprise resource allocation safety standards, all m
 ## 6. Actual Tests and Verified Experiments
 
 ### 1. Automated Unit Tests (`AssistantServiceTest.java`)
-- `chat_SuccessfulToolExecution_GroundedTrue`: Verified that successful tool execution returning non-empty candidate data sets `grounded = true`.
+- `chat_UnauthorizedStateChange_Rejected`: Verified that requests attempting allocation confirmation/rejection are intercepted and rejected without invoking the model or changing state.
+- `chat_OllamaUnavailable_ThrowsException`: Verified that connectivity failures throw `AiAssistantException` indicating Ollama is offline.
+- `chat_SuccessfulToolInvocationLoop`: Verified that successful tool execution returning non-empty candidate data sets `grounded = true`.
+- `chat_StructuredJsonFallbackToolSelection`: Verified that fallback JSON parsing extracts tool calls when the model responds with JSON rather than native function calling protocol.
 - `chat_FailedToolInvocation_NotGrounded`: Verified that a tool throwing an exception sets `grounded = false`.
 - `chat_EmptyToolResults_NotGrounded`: Verified that a tool returning an empty list sets `grounded = false`.
-- `chat_SecurityRejection_StateModification`: Verified that requests attempting allocation confirmation are blocked without tool invocation.
 
 ### 2. Live Verification Experiment (Recorded Task-2129)
 - **Prompt**: *"What are the open demands?"*
@@ -143,4 +146,4 @@ To ensure compliance with enterprise resource allocation safety standards, all m
 
 1. **Local Model Capacity**: `llama3.2:3b` is an efficient 3.2B parameter model. While it reliably triggers structured tools, its conversational responses may occasionally paraphrase role titles or add polite conversational framing.
 2. **Inference Latency**: Depending on host CPU/GPU utilization, response generation latency ranges from 800ms to 25 seconds. The application configures a 120-second timeout to handle peak host load.
-3. **Graceful Offline Degradation**: If the local Ollama daemon is not running, the application gracefully handles `ResourceAccessException`, falls back to deterministic rule explanations where possible, and explicitly marks `liveModelUsed: false` and `grounded: false`.
+3. **Graceful Offline Degradation**: If the local Ollama daemon is not running, the application catches the connectivity failure, throws `AiAssistantException`, and returns an HTTP 503 `SERVICE_UNAVAILABLE` response with clear instructions to start Ollama (`ollama serve`). The UI intercepts this status code and presents an informative service card, preventing ungrounded hallucinations from being served.

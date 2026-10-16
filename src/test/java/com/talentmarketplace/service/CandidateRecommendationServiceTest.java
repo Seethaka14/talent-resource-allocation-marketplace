@@ -20,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.talentmarketplace.dto.response.AvailabilityAssessmentResponse;
 import com.talentmarketplace.dto.response.CandidateRecommendationResponse;
 import com.talentmarketplace.dto.response.DemandRecommendationListResponse;
+import com.talentmarketplace.entity.AllocationStatus;
 import com.talentmarketplace.entity.DemandPriority;
 import com.talentmarketplace.entity.DemandSkill;
 import com.talentmarketplace.entity.DemandStatus;
@@ -28,12 +29,15 @@ import com.talentmarketplace.entity.EmployeeSkill;
 import com.talentmarketplace.entity.EmploymentStatus;
 import com.talentmarketplace.entity.ProficiencyLevel;
 import com.talentmarketplace.entity.ProjectDemand;
+import com.talentmarketplace.entity.ResourceAllocation;
 import com.talentmarketplace.entity.Skill;
 import com.talentmarketplace.entity.SkillCategory;
+import com.talentmarketplace.exception.BusinessRuleValidationException;
 import com.talentmarketplace.exception.ResourceNotFoundException;
 import com.talentmarketplace.repository.EmployeeRepository;
 import com.talentmarketplace.repository.EmployeeSkillRepository;
 import com.talentmarketplace.repository.ProjectDemandRepository;
+import com.talentmarketplace.repository.ResourceAllocationRepository;
 
 @ExtendWith(MockitoExtension.class)
 class CandidateRecommendationServiceTest {
@@ -49,6 +53,9 @@ class CandidateRecommendationServiceTest {
 
     @Mock
     private AvailabilityService availabilityService;
+
+    @Mock
+    private ResourceAllocationRepository allocationRepository;
 
     @InjectMocks
     private CandidateRecommendationServiceImpl recommendationService;
@@ -364,5 +371,215 @@ class CandidateRecommendationServiceTest {
         assertThat(filtered.getEligibleCandidatesCount()).isEqualTo(1);
         assertThat(filtered.getCandidates()).hasSize(1);
         assertThat(filtered.getCandidates().get(0).getEmployeeId()).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("Should mark candidate ineligible with 'Allocation Pending' reason when PENDING allocation exists on same demand")
+    void testRecommend_candidateWithPendingAllocationOnSameDemand() {
+        when(demandRepository.findByIdWithSkills(100L)).thenReturn(Optional.of(sampleDemand));
+        when(employeeRepository.findAll()).thenReturn(List.of(activeEmployee1));
+
+        EmployeeSkill esJava = new EmployeeSkill(activeEmployee1, javaSkill, ProficiencyLevel.ADVANCED, 4.0);
+        when(employeeSkillRepository.findByEmployeeIdWithDetails(1L)).thenReturn(List.of(esJava));
+
+        when(availabilityService.assessEmployeeAvailability(eq(activeEmployee1), any(), any(), eq(50)))
+                .thenReturn(createAvailableResponse(activeEmployee1, 50));
+
+        ResourceAllocation pendingAlloc = new ResourceAllocation(
+                activeEmployee1, sampleDemand, sampleDemand.getStartDate(), sampleDemand.getEndDate(),
+                50, AllocationStatus.PENDING, "Staffing Lead"
+        );
+        pendingAlloc.setId(501L);
+
+        when(allocationRepository.findByDemandIdAndStatusInWithEmployee(eq(100L), any()))
+                .thenReturn(List.of(pendingAlloc));
+
+        // When eligibleOnly is false, candidate is included but ineligible with PENDING status
+        DemandRecommendationListResponse response = recommendationService.recommendCandidatesForDemand(
+                100L, false, null, null
+        );
+
+        assertThat(response.getCandidates()).hasSize(1);
+        CandidateRecommendationResponse cand = response.getCandidates().get(0);
+        assertThat(cand.isEligible()).isFalse();
+        assertThat(cand.getExistingAllocationStatus()).isEqualTo(AllocationStatus.PENDING);
+        assertThat(cand.getExistingAllocationId()).isEqualTo(501L);
+        assertThat(cand.getExclusionReasons())
+                .contains("An active allocation request already exists for this demand");
+
+        // When eligibleOnly is true, candidate is excluded from the returned list
+        DemandRecommendationListResponse eligibleOnlyResponse = recommendationService.recommendCandidatesForDemand(
+                100L, true, null, null
+        );
+        assertThat(eligibleOnlyResponse.getCandidates()).isEmpty();
+        assertThat(eligibleOnlyResponse.getEligibleCandidatesCount()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("Should mark candidate ineligible with 'Already Allocated' reason when CONFIRMED allocation exists on same demand")
+    void testRecommend_candidateWithConfirmedAllocationOnSameDemand() {
+        when(demandRepository.findByIdWithSkills(100L)).thenReturn(Optional.of(sampleDemand));
+        when(employeeRepository.findAll()).thenReturn(List.of(activeEmployee1));
+
+        EmployeeSkill esJava = new EmployeeSkill(activeEmployee1, javaSkill, ProficiencyLevel.ADVANCED, 4.0);
+        when(employeeSkillRepository.findByEmployeeIdWithDetails(1L)).thenReturn(List.of(esJava));
+
+        when(availabilityService.assessEmployeeAvailability(eq(activeEmployee1), any(), any(), eq(50)))
+                .thenReturn(createAvailableResponse(activeEmployee1, 50));
+
+        ResourceAllocation confirmedAlloc = new ResourceAllocation(
+                activeEmployee1, sampleDemand, sampleDemand.getStartDate(), sampleDemand.getEndDate(),
+                50, AllocationStatus.CONFIRMED, "Staffing Lead"
+        );
+        confirmedAlloc.setId(502L);
+
+        when(allocationRepository.findByDemandIdAndStatusInWithEmployee(eq(100L), any()))
+                .thenReturn(List.of(confirmedAlloc));
+
+        DemandRecommendationListResponse response = recommendationService.recommendCandidatesForDemand(
+                100L, false, null, null
+        );
+
+        assertThat(response.getCandidates()).hasSize(1);
+        CandidateRecommendationResponse cand = response.getCandidates().get(0);
+        assertThat(cand.isEligible()).isFalse();
+        assertThat(cand.getExistingAllocationStatus()).isEqualTo(AllocationStatus.CONFIRMED);
+        assertThat(cand.getExistingAllocationId()).isEqualTo(502L);
+        assertThat(cand.getExclusionReasons())
+                .contains("Employee is already allocated to this demand");
+    }
+
+    @Test
+    @DisplayName("Should keep candidate eligible when prior allocation on same demand was CANCELLED or REJECTED")
+    void testRecommend_candidateWithCancelledOrRejectedAllocation_remainsEligible() {
+        when(demandRepository.findByIdWithSkills(100L)).thenReturn(Optional.of(sampleDemand));
+        when(employeeRepository.findAll()).thenReturn(List.of(activeEmployee1));
+
+        EmployeeSkill esJava = new EmployeeSkill(activeEmployee1, javaSkill, ProficiencyLevel.ADVANCED, 4.0);
+        when(employeeSkillRepository.findByEmployeeIdWithDetails(1L)).thenReturn(List.of(esJava));
+
+        when(availabilityService.assessEmployeeAvailability(eq(activeEmployee1), any(), any(), eq(50)))
+                .thenReturn(createAvailableResponse(activeEmployee1, 50));
+
+        // When finding active allocations (PENDING, CONFIRMED), CANCELLED/REJECTED are not returned
+        when(allocationRepository.findByDemandIdAndStatusInWithEmployee(eq(100L), any()))
+                .thenReturn(List.of());
+
+        DemandRecommendationListResponse response = recommendationService.recommendCandidatesForDemand(
+                100L, true, null, null
+        );
+
+        assertThat(response.getCandidates()).hasSize(1);
+        CandidateRecommendationResponse cand = response.getCandidates().get(0);
+        assertThat(cand.isEligible()).isTrue();
+        assertThat(cand.getExistingAllocationStatus()).isNull();
+        assertThat(cand.getExclusionReasons()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("Should evaluate employee allocated to a different demand based on remaining capacity - eligible when capacity sufficient")
+    void testRecommend_candidateAllocatedToDifferentDemand_eligibleWhenCapacitySufficient() {
+        when(demandRepository.findByIdWithSkills(100L)).thenReturn(Optional.of(sampleDemand));
+        when(employeeRepository.findAll()).thenReturn(List.of(activeEmployee1));
+
+        EmployeeSkill esJava = new EmployeeSkill(activeEmployee1, javaSkill, ProficiencyLevel.ADVANCED, 4.0);
+        when(employeeSkillRepository.findByEmployeeIdWithDetails(1L)).thenReturn(List.of(esJava));
+
+        // Employee has 40% allocated on a different demand, so 60% capacity remains. Requested is 50%, so available!
+        AvailabilityAssessmentResponse partialCapResp = new AvailabilityAssessmentResponse(
+                1L, "EMP-01", "Alice", EmploymentStatus.ACTIVE, 100,
+                sampleDemand.getStartDate(), sampleDemand.getEndDate(), 50, true, 60,
+                List.of(), "Employee is available with 60% remaining capacity"
+        );
+        when(availabilityService.assessEmployeeAvailability(eq(activeEmployee1), any(), any(), eq(50)))
+                .thenReturn(partialCapResp);
+
+        when(allocationRepository.findByDemandIdAndStatusInWithEmployee(eq(100L), any()))
+                .thenReturn(List.of()); // No active allocation on this demand (Demand 100L)
+
+        DemandRecommendationListResponse response = recommendationService.recommendCandidatesForDemand(
+                100L, true, null, null
+        );
+
+        assertThat(response.getCandidates()).hasSize(1);
+        CandidateRecommendationResponse cand = response.getCandidates().get(0);
+        assertThat(cand.isEligible()).isTrue();
+        assertThat(cand.getExistingAllocationStatus()).isNull();
+        assertThat(cand.getAvailabilityAssessment().getRemainingCapacityPercent()).isEqualTo(60);
+    }
+
+    @Test
+    @DisplayName("Should mark employee allocated to different demand ineligible when remaining capacity is insufficient")
+    void testRecommend_candidateAllocatedToDifferentDemand_ineligibleWhenCapacityInsufficient() {
+        when(demandRepository.findByIdWithSkills(100L)).thenReturn(Optional.of(sampleDemand));
+        when(employeeRepository.findAll()).thenReturn(List.of(activeEmployee1));
+
+        EmployeeSkill esJava = new EmployeeSkill(activeEmployee1, javaSkill, ProficiencyLevel.ADVANCED, 4.0);
+        when(employeeSkillRepository.findByEmployeeIdWithDetails(1L)).thenReturn(List.of(esJava));
+
+        // Employee has 80% allocated on another demand, only 20% capacity remains. Requested is 50% -> insufficient
+        AvailabilityAssessmentResponse partialCapResp = new AvailabilityAssessmentResponse(
+                1L, "EMP-01", "Alice", EmploymentStatus.ACTIVE, 100,
+                sampleDemand.getStartDate(), sampleDemand.getEndDate(), 50, false, 20,
+                List.of(), "Requested allocation (50%) exceeds remaining available capacity (20%, currently allocated: 80%)"
+        );
+        when(availabilityService.assessEmployeeAvailability(eq(activeEmployee1), any(), any(), eq(50)))
+                .thenReturn(partialCapResp);
+
+        when(allocationRepository.findByDemandIdAndStatusInWithEmployee(eq(100L), any()))
+                .thenReturn(List.of());
+
+        DemandRecommendationListResponse response = recommendationService.recommendCandidatesForDemand(
+                100L, false, null, null
+        );
+
+        assertThat(response.getCandidates()).hasSize(1);
+        CandidateRecommendationResponse cand = response.getCandidates().get(0);
+        assertThat(cand.isEligible()).isFalse();
+        assertThat(cand.getExistingAllocationStatus()).isNull(); // Not allocated to this demand!
+        assertThat(cand.getExclusionReasons())
+                .anyMatch(r -> r.contains("exceeds remaining available capacity"));
+    }
+
+    @Test
+    @DisplayName("Should throw BusinessRuleValidationException when minScore is negative or > 100")
+    void testRecommend_invalidMinScoreThrowsException() {
+        org.junit.jupiter.api.Assertions.assertThrows(
+                BusinessRuleValidationException.class,
+                () -> recommendationService.recommendCandidatesForDemand(100L, false, -1.0, null)
+        );
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                BusinessRuleValidationException.class,
+                () -> recommendationService.recommendCandidatesForDemand(100L, false, 101.0, null)
+        );
+    }
+
+    @Test
+    @DisplayName("Should throw BusinessRuleValidationException when limit <= 0")
+    void testRecommend_invalidLimitThrowsException() {
+        org.junit.jupiter.api.Assertions.assertThrows(
+                BusinessRuleValidationException.class,
+                () -> recommendationService.recommendCandidatesForDemand(100L, false, null, 0)
+        );
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                BusinessRuleValidationException.class,
+                () -> recommendationService.recommendCandidatesForDemand(100L, false, null, -5)
+        );
+    }
+
+    @Test
+    @DisplayName("Should throw ResourceNotFoundException when demandId is non-positive or null")
+    void testRecommend_invalidDemandIdThrowsException() {
+        org.junit.jupiter.api.Assertions.assertThrows(
+                ResourceNotFoundException.class,
+                () -> recommendationService.recommendCandidatesForDemand(0L, false, null, null)
+        );
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                ResourceNotFoundException.class,
+                () -> recommendationService.recommendCandidatesForDemand(-10L, false, null, null)
+        );
     }
 }

@@ -17,10 +17,9 @@ import jakarta.validation.constraints.Size;
 
 public class CreateDemandRequest {
 
-    @NotBlank(message = "Demand code is required")
     @Size(max = 30, message = "Demand code cannot exceed 30 characters")
     @Pattern(
-            regexp = "^[A-Za-z0-9_-]{3,30}$",
+            regexp = "^$|^[A-Za-z0-9_-]{3,30}$",
             message = "Demand code must contain only letters, numbers, hyphens and underscores"
     )
     private String demandCode;

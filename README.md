@@ -1,137 +1,254 @@
 # AI-Driven Talent and Resource Allocation Marketplace
 
-An enterprise resource management application that matches employees to project demands using deterministic eligibility evaluation, multi-dimensional candidate scoring, real capacity/availability assessment, pessimistic locking concurrency control, safe Flyway migrations, six dedicated SQL analytics reports, and local Agentic AI with Ollama `llama3.2:3b`.
+A web application that helps project managers identify suitable employees for project demands based on skills, availability, and location. It includes an AI staffing assistant to support candidate comparisons and staffing-related questions.
 
----
+## 1. Project Overview
 
-## 1. System Architecture & Tech Stack
+The marketplace brings employee information, skills, project demands, candidate recommendations, availability, and resource allocations into one application. It uses a Spring Boot backend, a web frontend, MySQL for data storage, and a local Ollama model for AI-assisted staffing.
 
-- **Backend**: Java 25 / Spring Boot 4.1.1 (Spring Data JPA, Hibernate, Bean Validation, Spring WebMVC)
-- **Database**: MySQL 8.4 Server
-  - **Live Demo Database**: `talent_marketplace` (Protected; preserves seeded synthetic records)
-  - **Isolated Test Database**: `talent_marketplace_test` (Targets all automated unit and integration tests)
-- **Database Migrations**: Flyway Community (Versioned SQL migrations with `V1__initial_schema.sql` and baseline-on-migrate safety)
-- **Concurrency Safety**: Pessimistic write locking (`PESSIMISTIC_WRITE` / `SELECT ... FOR UPDATE`) on Employee records during allocation confirmation to guarantee cumulative capacity integrity.
-- **Local AI Agent**: Ollama 0.35.0 running `llama3.2:3b`
-  - Zero external cloud LLM dependencies or paid API keys.
-  - Controlled typed tool allowlist backed by existing deterministic Java services.
-  - Grounding verification: Responses marked database-grounded only when tools succeed and return usable business data.
-- **Frontend**: Vanilla HTML5, CSS3, and JavaScript Single Page Application served directly from Spring Boot static resources (`http://localhost:8080/`).
+## 2. Prerequisites
 
----
+- **Java JDK 25** — the version configured for this project.
+- **MySQL 8.x** — application database.
+- **Ollama** with the `llama3.2:3b` model — required for AI features.
+- **Web browser** — to access the application.
+- **Code editor or terminal** — for configuration and commands.
 
-## 2. Seven Interactive UI Screens
+The project includes the Maven Wrapper (`mvnw` and `mvnw.cmd`), so a separate Maven installation is generally not required. Spring Boot, Spring Data JPA, Hibernate, and test libraries are managed through `pom.xml`.
 
-The application UI serves 7 distinct operational screens:
-1. **Demand Intake / Management**: View, filter, and create project demands, skill requirements, and priorities.
-2. **Resource Directory & Skills Matrix**: Search employees, view statuses (`ACTIVE`, `ON_LEAVE`, `INACTIVE`), department, location, and verified skill proficiencies.
-3. **Candidate Recommendations & Scoring**: Deterministic candidate rankings for selected demands (e.g., Demand 50) using the authoritative formula: **Skills: /70**, **Availability: /20**, **Location: /10** (**Total: /100**).
-4. **Candidate Side-by-Side Comparison**: Multi-candidate comparative grid highlighting skill matching, proficiency deltas, and scoring breakdowns.
-5. **Allocation Workflow Management**: Draft allocation creation (`PENDING`), pessimistic locking confirmation (`CONFIRMED`), rejection with reasons, and cancellation.
-6. **Utilization & Analytics Dashboard**: Date-window evaluated resource utilization metrics with discrete evaluation windows `[startDate, endDate]`, distinguishing **Peak Simultaneous Commitment (%)** from **Time-Weighted Average Utilization (%)**.
-7. **Agentic AI Assistant Chat**: Interactive conversational drawer with natural language query answering, tool execution summaries, and verified database-grounding badges.
+## 3. Key Features
 
----
+- Manage employees, skills, and project demands.
+- Recommend and rank eligible employees based on skills, availability, and location.
+- Check employee availability and manage resource allocations.
+- View resource utilization and skill-gap analytics.
+- Use the AI staffing assistant to compare candidates and explain missing skills.
+- Apply role-based access for Project Managers and Resource Managers.
+- Protect allocation capacity during concurrent allocation confirmations.
 
-## 3. Six Dedicated SQL Analytics Reports
+## 4. System Architecture
 
-The reporting engine exposes dedicated REST endpoints backed by native MySQL queries (`src/main/resources/db/reports/`):
+The application follows a **layered architecture** that separates request handling, business logic, and database access.
 
-| Report # | Report Name | Endpoint | SQL Script File | Description |
-|---|---|---|---|---|
-| **Report 1** | Open Demands by Role & Priority | `GET /api/analytics/reports/open-demands-by-role-priority` | `src/main/resources/db/reports/report1_open_demands.sql` | Aggregates open demands grouped by role and priority urgency. |
-| **Report 2** | Resources by Skill & Proficiency | `GET /api/analytics/reports/resources-by-skill-proficiency` | `src/main/resources/db/reports/report2_resources_by_skill.sql` | Active employee counts per skill and level using `COUNT(DISTINCT e.id)`. |
-| **Report 3** | Availability for Date Range | `GET /api/analytics/reports/availability-date-range` | `src/main/resources/db/reports/report3_availability_date_range.sql` | Availability sweep over `[startDate, endDate]` accounting for leave and confirmed allocations. |
-| **Report 4** | Utilization by Employee & Department | `GET /api/analytics/reports/utilization-by-employee-department` | `src/main/resources/db/reports/report4_utilization_by_employee_dept.sql` | Time-weighted average utilization and peak simultaneous commitment over window; includes zero-allocation employees. |
-| **Report 5** | Demands with No Eligible Candidate | `GET /api/analytics/reports/demands-with-no-eligible-candidate` | `src/main/resources/db/reports/report5_demands_no_eligible_candidate.sql` | Identifies open demands with zero eligible candidates via deterministic recommendation engine. |
-| **Report 6** | Skill Gaps by Category | `GET /api/analytics/reports/skill-gaps-by-category` | `src/main/resources/db/reports/report6_skill_gaps_by_category.sql` | Aggregates demand requirements vs. qualified employee supply per category without double-counting. |
+```text
+          Project Manager / Resource Manager
+                         |
+                         v
+                  Web Interface
+                 (HTML / CSS / JS)
+                         |
+                         v
+                Spring Security
+          (Authentication and Authorization)
+                         |
+                         v
+                  Controllers
+                  (REST API Layer)
+                         |
+                         v
+                    Services
+          (Business Logic and Validation)
+                         |
+                         v
+                  Repositories
+                 (Spring Data JPA)
+                         |
+                         v
+                   MySQL Database
 
----
 
-## 4. Flyway Migrations & Database Setup
+              AI Staffing Assistant
+                         |
+                         v
+                 Assistant Service
+                         |
+                         v
+              Allowlisted Read-Only Tools
+                         |
+                         v
+                Local Ollama Model
+                  (llama3.2:3b)
+```
 
-### Clean Database Initialization
-For fresh installations or clean testing containers:
-1. Apply versioned schema migration:
-   ```bash
-   src/main/resources/db/migration/V1__initial_schema.sql
-   ```
-2. Apply synthetic demo seed data:
-   ```bash
-   src/main/resources/db/seed/demo_data.sql
-   ```
-3. Hibernate schema validation (`spring.jpa.hibernate.ddl-auto=validate`) confirms 100% equivalence between the Flyway schema and JPA entities.
+- **Web interface:** Provides screens for employees, skills, demands, recommendations, allocations, and analytics.
+- **Security:** Authenticates users and enforces role-based access.
+- **Controllers:** Receive HTTP requests and return API responses.
+- **Services:** Implement business rules, ranking, availability checks, and allocation validation.
+- **Repositories:** Access database records through Spring Data JPA and Hibernate.
+- **MySQL:** Stores application data.
+- **AI assistant:** Uses the local Ollama model and allowlisted read-only tools to answer staffing questions.
 
-### Safe Existing Database Adoption (`talent_marketplace`)
-Existing production/demo databases that were created without Flyway metadata must not have `flyway.migrate()` run without a baseline.
-- **Safety Precondition**: `spring.flyway.enabled=false` is configured in `application.properties` to ensure automated application runs never alter `talent_marketplace`.
-- **Manual Adoption Procedure**:
-  ```powershell
-  # Establish baseline at version 1 without executing DDL:
-  flyway -url="jdbc:mysql://localhost:3306/talent_marketplace?useSSL=false&allowPublicKeyRetrieval=true" `
-         -user="root" -password="rootpassword" `
-         -baselineVersion="1" -baselineDescription="Initial Schema" baseline
-  ```
+**Request flow:** A request from the web interface passes through security to a controller. The service layer applies business rules, and the repository accesses MySQL when needed. The result is returned to the frontend. During allocation confirmation, the service locks and revalidates the relevant employee capacity to help prevent conflicting concurrent allocations.
 
----
+## 5. Tech Stack
 
-## 5. Local Ollama AI Setup
+| Area | Technology |
+|---|---|
+| Programming language | Java 25 |
+| Backend framework | Spring Boot 4.1.1 |
+| Persistence | Spring Data JPA, Hibernate |
+| Database | MySQL 8.x |
+| Database migrations | Flyway |
+| Frontend | HTML, CSS, JavaScript |
+| AI integration | Ollama, `llama3.2:3b` |
+| Build and testing | Maven Wrapper, JUnit and project test dependencies |
+| API testing | Postman |
 
-### Prerequisites
-1. Download and install [Ollama](https://ollama.com/) (version 0.35.0 or later).
-2. Start the local daemon:
-   ```bash
-   ollama serve
-   ```
-3. Pull the required model:
-   ```bash
-   ollama pull llama3.2:3b
-   ```
-4. Verify local connectivity:
-   ```bash
-   curl http://localhost:11434/api/tags
-   ```
+## 6. Setup
 
-### Six Allowlisted Agentic Tools
-The AI Assistant interacts with application state exclusively through an allowlist of 6 typed Java service tools:
-- `search_open_demands`: Search open demands with role/location filters.
-- `get_demand_candidates`: Retrieve deterministic candidate rankings and scores for a demand.
-- `check_employee_availability`: Check candidate availability against leave and confirmed allocations.
-- `explain_missing_skills`: Explain mandatory and optional skill deficits for a candidate.
-- `compare_candidates`: Side-by-side comparative analysis of top candidates.
-- `get_allocation_status`: Retrieve current confirmed and pending allocation records.
+### Step 1: Install prerequisites
+Install Java JDK 25, MySQL 8.x, and Ollama if you plan to use the AI assistant.
 
----
+### Step 2: Create the database
+If the database does not already exist, create it in MySQL:
 
-## 6. Application Startup & Verification
+```sql
+CREATE DATABASE talent_marketplace;
+```
 
-### Start Application
+### Step 3: Configure database access
+Configure the datasource URL, username, and password in `src/main/resources/application.properties` or through the environment variables supported by the project. Do not commit real credentials.
+
+### Step 4: Check database migrations
+Flyway is disabled by default in the main configuration to protect existing demo data. For a new database, review the migration scripts and project configuration before applying migrations. Do not enable migrations against an existing database without checking its schema and migration history first.
+
+### Step 5: Set up the AI model
+Pull the model:
+
+```bash
+ollama pull llama3.2:3b
+```
+
+Ensure Ollama is running at the endpoint configured for the application (commonly `http://localhost:11434`). The core application can still be used when the local AI service is unavailable, but AI requests may not work.
+
+## 7. Run Instructions
+
+Open a terminal in the project root and start the application:
+
+**Windows PowerShell**
 ```powershell
 .\mvnw.cmd spring-boot:run
 ```
-The server will start on port `8080`. Access the UI at `http://localhost:8080/`.
 
-### Run Automated Tests
+**macOS / Linux**
+```bash
+./mvnw spring-boot:run
+```
+
+The application is configured to run at:
+
+```text
+http://localhost:8080
+```
+
+Stop the application with `Ctrl+C`.
+
+
+## 8. Login and Role-Based Access
+
+The application supports two roles:
+
+| Role | Main access |
+|---|---|
+| **Project Manager (PM)** | Manage project demands and view candidate recommendations. |
+| **Resource Manager (RM)** | Manage resource allocations and approval workflows. |
+
+### Login URLs
+
+Start the application first, then open the relevant login page:
+
+- **Project Manager:** `http://localhost:8080/login-pm.html`
+- **Resource Manager:** `http://localhost:8080/login-rm.html`
+
+These URLs correspond to the role-specific login page filenames in `src/main/resources/static/`. Verify each page loads successfully in your local environment.
+
+### Demo credentials
+
+Use the local demo accounts configured by `DemoAccountInitializer.java`. Confirm the current login identifiers and passwords from the local configuration before sharing them. Do not publish database credentials, real user passwords, or other secrets in this README. Demo credentials are intended for local evaluation only and must not be used in a deployed environment.
+
+
+## 9. Project Folder Structure
+
+```text
+talent-resource-marketplace/
+├── .mvn/                             # Maven Wrapper configuration
+├── docs/
+│   ├── postman/                      # Postman API collection
+│   ├── screenshots/                  # Application screenshots and test evidence
+│   ├── SCREENSHOTS.md                # Screenshot documentation
+│   └── SUBMISSION_CHECKLIST.md       # Submission checklist
+├── src/
+│   ├── main/
+│   │   ├── java/com/talentmarketplace/
+│   │   │   ├── ai/                   # AI assistant components
+│   │   │   ├── config/               # Application configuration
+│   │   │   ├── controller/           # REST API endpoints
+│   │   │   ├── dto/                  # Request and response objects
+│   │   │   ├── entity/               # JPA entities
+│   │   │   ├── exception/            # Exception handling
+│   │   │   ├── repository/           # Database access
+│   │   │   ├── service/              # Business logic
+│   │   │   └── TalentResourceMarketplaceApplication.java
+│   │   └── resources/
+│   │       ├── db/                   # Database scripts and migrations
+│   │       ├── static/               # Static frontend resources
+│   │       ├── templates/            # HTML templates
+│   │       └── application.properties
+│   └── test/
+│       ├── java/                     # Automated tests
+│       └── resources/                # Test resources
+├── .gitattributes                    # Git file-handling rules
+├── .gitignore                        # Files excluded from Git
+├── AI_USAGE_LOG.md                   # AI usage documentation
+├── DEMO_PLAN.md                      # Demo walkthrough
+├── HELP.md                           # Project help information
+├── mvnw                              # Maven Wrapper for Unix
+├── mvnw.cmd                          # Maven Wrapper for Windows
+├── pom.xml                           # Dependencies and build configuration
+└── README.md                         # Project documentation
+```
+
+## 10. API Details
+
+**Base URL:** `http://localhost:8080`
+
+The REST API includes endpoints for:
+
+- Authentication and current-user profile
+- Employees and employee skills
+- Skills and project demands
+- Candidate recommendations
+- Employee unavailability
+- Resource allocations
+- Analytics and reports
+- AI staffing assistant
+
+For exact endpoint paths, HTTP methods, request bodies, and example responses, import this collection into Postman:
+
+`docs/postman/talent_resource_marketplace.postman_collection.json`
+
+Protected endpoints require an authenticated session and the appropriate role. Use the Postman collection as the endpoint reference; do not assume every request has been verified unless it has been run.
+
+## 11. Test Commands
+
+Run the automated test suite from the project root:
+
 ```powershell
 .\mvnw.cmd clean test
 ```
-The test suite runs **159 automated tests (0 failures, 0 errors, 0 skipped)** strictly against `talent_marketplace_test`.
 
----
+On macOS or Linux:
 
-## 7. Deliverables & Documentation Index
+```bash
+./mvnw clean test
+```
 
-- **Postman API Collection**: [docs/postman/talent_resource_marketplace.postman_collection.json](file:///c:/Users/SHemalatha/Downloads/talent-resource-marketplace/docs/postman/talent_resource_marketplace.postman_collection.json) (53 requests covering Phases 1–9).
-- **Screenshot Verification Guide**: [docs/SCREENSHOTS.md](file:///c:/Users/SHemalatha/Downloads/talent-resource-marketplace/docs/SCREENSHOTS.md) (Step-by-step manual capture guide for all 9 screens).
-- **AI Usage & Integration Log**: [AI_USAGE_LOG.md](file:///c:/Users/SHemalatha/Downloads/talent-resource-marketplace/AI_USAGE_LOG.md) (Architecture, 6 tools, grounding criteria, and verified experiments).
-- **Demonstration Plan**: [DEMO_PLAN.md](file:///c:/Users/SHemalatha/Downloads/talent-resource-marketplace/DEMO_PLAN.md) (Reproducible 5–10 minute demonstration script with minute markers).
-- **Submission Checklist**: [docs/SUBMISSION_CHECKLIST.md](file:///c:/Users/SHemalatha/Downloads/talent-resource-marketplace/docs/SUBMISSION_CHECKLIST.md) (Full mapping of requirements and TC-06-01 through TC-06-12).
+The latest reported test run completed with **223 tests, 0 failures, 0 errors, and 0 skipped**, ending in `BUILD SUCCESS`. Run the command again in your environment before submission to confirm the current result.
 
----
+## Additional Documentation
 
-## 8. Database Safety & Test Isolation
-
-To safeguard live demo records, automated tests are programmatically isolated from `talent_marketplace`:
-1. **Dedicated Test Database**: `talent_marketplace_test` (`src/test/resources/application.properties`).
-2. **Programmatic Safety Guard**: `TestDatabaseSafetyGuard` inspects the active JDBC connection catalog on context initialization and before every `@BeforeEach cleanDatabase()`. If connected to `talent_marketplace`, tests abort immediately with an `IllegalStateException`.
-3. **Demo Table Integrity**: Table counts on `talent_marketplace` are monitored before and after testing to ensure 0 records are ever dropped, truncated, or modified.
+- [AI Usage Log](AI_USAGE_LOG.md)
+- [Demo Plan](DEMO_PLAN.md)
+- [Screenshot Documentation](docs/SCREENSHOTS.md)
+- [Submission Checklist](docs/SUBMISSION_CHECKLIST.md)
+- Postman collection: `docs/postman/talent_resource_marketplace.postman_collection.json`

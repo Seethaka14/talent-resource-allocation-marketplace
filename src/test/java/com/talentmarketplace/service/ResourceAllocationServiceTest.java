@@ -24,14 +24,20 @@ import com.talentmarketplace.dto.response.AllocationResponse;
 import com.talentmarketplace.dto.response.AvailabilityAssessmentResponse;
 import com.talentmarketplace.entity.AllocationStatus;
 import com.talentmarketplace.entity.DemandPriority;
+import com.talentmarketplace.entity.DemandSkill;
 import com.talentmarketplace.entity.DemandStatus;
 import com.talentmarketplace.entity.Employee;
+import com.talentmarketplace.entity.EmployeeSkill;
 import com.talentmarketplace.entity.EmploymentStatus;
+import com.talentmarketplace.entity.ProficiencyLevel;
 import com.talentmarketplace.entity.ProjectDemand;
 import com.talentmarketplace.entity.ResourceAllocation;
+import com.talentmarketplace.entity.Skill;
+import com.talentmarketplace.entity.SkillCategory;
 import com.talentmarketplace.exception.BusinessRuleValidationException;
 import com.talentmarketplace.exception.ResourceNotFoundException;
 import com.talentmarketplace.repository.EmployeeRepository;
+import com.talentmarketplace.repository.EmployeeSkillRepository;
 import com.talentmarketplace.repository.ProjectDemandRepository;
 import com.talentmarketplace.repository.ResourceAllocationRepository;
 
@@ -49,6 +55,9 @@ class ResourceAllocationServiceTest {
 
     @Mock
     private AvailabilityService availabilityService;
+
+    @Mock
+    private EmployeeSkillRepository employeeSkillRepository;
 
     @InjectMocks
     private ResourceAllocationServiceImpl allocationService;
@@ -233,5 +242,164 @@ class ResourceAllocationServiceTest {
         assertThat(response.getStatus()).isEqualTo(AllocationStatus.REJECTED);
         assertThat(response.getRejectionReason()).isEqualTo("Resource needed on priority client");
         assertThat(response.getConfirmedBy()).isEqualTo("Resource Director");
+    }
+
+    @Test
+    @DisplayName("Should reject allocation creation when active allocation already exists for employee on demand")
+    void testCreateAllocation_duplicateActiveAllocation_fails() {
+        CreateAllocationRequest request = new CreateAllocationRequest(
+                20L, 10L, LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 31), 50, "Lead PM"
+        );
+
+        when(employeeRepository.findById(10L)).thenReturn(Optional.of(employee));
+        when(demandRepository.findById(20L)).thenReturn(Optional.of(demand));
+        when(allocationRepository.existsActiveAllocationForEmployeeAndDemand(eq(10L), eq(20L), any()))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> allocationService.createAllocation(request))
+                .isInstanceOf(BusinessRuleValidationException.class)
+                .hasMessageContaining("An active allocation request (PENDING or CONFIRMED) already exists");
+    }
+
+    @Test
+    @DisplayName("Should reject confirmation if employee is no longer ACTIVE")
+    void testConfirmAllocation_inactiveEmployee_fails() {
+        employee.setEmploymentStatus(EmploymentStatus.INACTIVE);
+        ResourceAllocation allocation = new ResourceAllocation(
+                employee, demand, LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 31), 50,
+                AllocationStatus.PENDING, "Lead PM"
+        );
+        allocation.setId(100L);
+
+        when(allocationRepository.findByIdWithDetails(100L)).thenReturn(Optional.of(allocation));
+        when(employeeRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(employee));
+
+        assertThatThrownBy(() -> allocationService.confirmAllocation(100L, "Staffing Manager"))
+                .isInstanceOf(BusinessRuleValidationException.class)
+                .hasMessageContaining("Employee is not active");
+    }
+
+    @Test
+    @DisplayName("Should reject confirmation if employee lacks a mandatory skill required by the demand")
+    void testConfirmAllocation_missingMandatorySkill_fails() {
+        ResourceAllocation allocation = new ResourceAllocation(
+                employee, demand, LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 31), 50,
+                AllocationStatus.PENDING, "Lead PM"
+        );
+        allocation.setId(100L);
+
+        Skill javaSkill = new Skill("Java", SkillCategory.BACKEND, "Java Core");
+        javaSkill.setId(50L);
+        DemandSkill mandatoryJava = new DemandSkill(demand, javaSkill, true, ProficiencyLevel.ADVANCED);
+        demand.addRequiredSkill(mandatoryJava);
+
+        when(allocationRepository.findByIdWithDetails(100L)).thenReturn(Optional.of(allocation));
+        when(employeeRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(employee));
+        when(demandRepository.findByIdWithSkills(20L)).thenReturn(Optional.of(demand));
+        when(employeeSkillRepository.findByEmployeeIdWithDetails(10L)).thenReturn(List.of()); // No skills
+
+        assertThatThrownBy(() -> allocationService.confirmAllocation(100L, "Staffing Manager"))
+                .isInstanceOf(BusinessRuleValidationException.class)
+                .hasMessageContaining("Employee lacks mandatory skill requirement: Java");
+    }
+
+    @Test
+    @DisplayName("Should reject confirmation if employee proficiency is below mandatory minimum")
+    void testConfirmAllocation_mandatorySkillBelowRequiredProficiency_fails() {
+        ResourceAllocation allocation = new ResourceAllocation(
+                employee, demand, LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 31), 50,
+                AllocationStatus.PENDING, "Lead PM"
+        );
+        allocation.setId(100L);
+
+        Skill javaSkill = new Skill("Java", SkillCategory.BACKEND, "Java Core");
+        javaSkill.setId(50L);
+        DemandSkill mandatoryJava = new DemandSkill(demand, javaSkill, true, ProficiencyLevel.ADVANCED);
+        demand.addRequiredSkill(mandatoryJava);
+
+        EmployeeSkill beginnerJava = new EmployeeSkill(employee, javaSkill, ProficiencyLevel.BEGINNER, 1.0);
+
+        when(allocationRepository.findByIdWithDetails(100L)).thenReturn(Optional.of(allocation));
+        when(employeeRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(employee));
+        when(demandRepository.findByIdWithSkills(20L)).thenReturn(Optional.of(demand));
+        when(employeeSkillRepository.findByEmployeeIdWithDetails(10L)).thenReturn(List.of(beginnerJava));
+
+        assertThatThrownBy(() -> allocationService.confirmAllocation(100L, "Staffing Manager"))
+                .isInstanceOf(BusinessRuleValidationException.class)
+                .hasMessageContaining("does not meet minimum requirement (ADVANCED)");
+    }
+
+    @Test
+    @DisplayName("Should successfully transition CONFIRMED allocation to COMPLETED and preserve history")
+    void testCompleteAllocation_success() {
+        ResourceAllocation allocation = new ResourceAllocation(
+                employee, demand, LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 31), 50,
+                AllocationStatus.CONFIRMED, "Lead PM"
+        );
+        allocation.setId(100L);
+
+        when(allocationRepository.findByIdWithDetails(100L)).thenReturn(Optional.of(allocation));
+        when(allocationRepository.save(any(ResourceAllocation.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        AllocationResponse response = allocationService.completeAllocation(100L);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(AllocationStatus.COMPLETED);
+        verify(allocationRepository).save(allocation);
+        assertThat(allocation.getStatus()).isEqualTo(AllocationStatus.COMPLETED);
+    }
+
+    @Test
+    @DisplayName("Should be idempotent when completing already COMPLETED allocation")
+    void testCompleteAllocation_alreadyCompleted_idempotent() {
+        ResourceAllocation allocation = new ResourceAllocation(
+                employee, demand, LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 31), 50,
+                AllocationStatus.COMPLETED, "Lead PM"
+        );
+        allocation.setId(100L);
+
+        when(allocationRepository.findByIdWithDetails(100L)).thenReturn(Optional.of(allocation));
+
+        AllocationResponse response = allocationService.completeAllocation(100L);
+
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(AllocationStatus.COMPLETED);
+    }
+
+    @Test
+    @DisplayName("Should fail when attempting to complete a non-CONFIRMED (e.g. PENDING) allocation")
+    void testCompleteAllocation_pendingStatus_fails() {
+        ResourceAllocation allocation = new ResourceAllocation(
+                employee, demand, LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 31), 50,
+                AllocationStatus.PENDING, "Lead PM"
+        );
+        allocation.setId(100L);
+
+        when(allocationRepository.findByIdWithDetails(100L)).thenReturn(Optional.of(allocation));
+
+        assertThatThrownBy(() -> allocationService.completeAllocation(100L))
+                .isInstanceOf(BusinessRuleValidationException.class)
+                .hasMessageContaining("Only CONFIRMED allocations can be marked as COMPLETED");
+    }
+
+    @Test
+    @DisplayName("Should preserve allocation record in CANCELLED status when cancelled")
+    void testCancelAllocation_preservesHistoryRecord() {
+        ResourceAllocation allocation = new ResourceAllocation(
+                employee, demand, LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 31), 50,
+                AllocationStatus.CONFIRMED, "Lead PM"
+        );
+        allocation.setId(100L);
+
+        when(allocationRepository.findByIdWithDetails(100L)).thenReturn(Optional.of(allocation));
+        when(allocationRepository.save(any(ResourceAllocation.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(allocationRepository.sumConfirmedAllocationsForDemand(20L)).thenReturn(0);
+
+        AllocationResponse response = allocationService.cancelAllocation(100L, "Project timeline deferred");
+
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(AllocationStatus.CANCELLED);
+        assertThat(response.getRejectionReason()).isEqualTo("Project timeline deferred");
+        verify(allocationRepository).save(allocation);
     }
 }

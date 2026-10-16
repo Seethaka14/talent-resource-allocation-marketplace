@@ -14,6 +14,8 @@ public interface ResourceAllocationService {
 
     AllocationResponse cancelAllocation(Long allocationId, String reason);
 
+    AllocationResponse completeAllocation(Long allocationId);
+
     AllocationResponse rejectAllocation(Long allocationId, RejectAllocationRequest request);
 
     AllocationResponse getAllocationById(Long allocationId);

@@ -263,4 +263,213 @@ class AvailabilityServiceTest {
         assertThat(response.isAvailable()).isTrue();
         assertThat(response.getRemainingCapacityPercent()).isEqualTo(60);
     }
+
+    @Test
+    @DisplayName("Should evaluate peak allocation across daily overlapping intervals rather than single aggregate average")
+    void testAssessAvailability_multipleOverlappingAllocations_calculatesDailyPeakRemainingCapacity() {
+        LocalDate startDate = LocalDate.of(2026, 11, 1);
+        LocalDate endDate = LocalDate.of(2026, 11, 30);
+
+        // Alloc 1: Nov 1 - Nov 15 @ 40%
+        ResourceAllocation alloc1 = new ResourceAllocation(
+                activeEmployee, null, LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 15),
+                40, AllocationStatus.CONFIRMED, "PM1"
+        );
+        // Alloc 2: Nov 10 - Nov 25 @ 40%
+        ResourceAllocation alloc2 = new ResourceAllocation(
+                activeEmployee, null, LocalDate.of(2026, 11, 10), LocalDate.of(2026, 11, 25),
+                40, AllocationStatus.CONFIRMED, "PM2"
+        );
+
+        when(employeeRepository.findById(1L)).thenReturn(Optional.of(activeEmployee));
+        when(unavailabilityRepository.findOverlappingUnavailabilities(1L, startDate, endDate))
+                .thenReturn(List.of());
+        when(allocationRepository.findOverlappingConfirmedAllocations(1L, startDate, endDate))
+                .thenReturn(List.of(alloc1, alloc2));
+
+        // On Nov 10-15, peak simultaneous allocation is 40% + 40% = 80%.
+        // Remaining capacity is 100 - 80 = 20%.
+        // A requested allocation of 30% must fail because at peak it would demand 110%.
+        AvailabilityAssessmentResponse response = availabilityService.assessEmployeeAvailability(
+                1L, startDate, endDate, 30
+        );
+
+        assertThat(response.isAvailable()).isFalse();
+        assertThat(response.getPeakAllocatedPercent()).isEqualTo(80);
+        assertThat(response.getRemainingCapacityPercent()).isEqualTo(20);
+        assertThat(response.getReason()).contains("currently allocated: 80%");
+    }
+
+    @Test
+    @DisplayName("Should enforce inclusive date range boundary: allocation on exact boundary dates")
+    void testAssessAvailability_boundaryOverlap_inclusiveDateRange() {
+        LocalDate startDate = LocalDate.of(2026, 11, 1);
+        LocalDate endDate = LocalDate.of(2026, 11, 30);
+
+        // Allocation starting on exactly the end date Nov 30
+        ResourceAllocation boundaryAlloc = new ResourceAllocation(
+                activeEmployee, null, LocalDate.of(2026, 11, 30), LocalDate.of(2026, 12, 10),
+                70, AllocationStatus.CONFIRMED, "PM"
+        );
+
+        when(employeeRepository.findById(1L)).thenReturn(Optional.of(activeEmployee));
+        when(unavailabilityRepository.findOverlappingUnavailabilities(1L, startDate, endDate))
+                .thenReturn(List.of());
+        when(allocationRepository.findOverlappingConfirmedAllocations(1L, startDate, endDate))
+                .thenReturn(List.of(boundaryAlloc));
+
+        // Peak is 70% on Nov 30; remaining capacity is 30%.
+        // Requesting 40% should fail.
+        AvailabilityAssessmentResponse response = availabilityService.assessEmployeeAvailability(
+                1L, startDate, endDate, 40
+        );
+
+        assertThat(response.isAvailable()).isFalse();
+        assertThat(response.getPeakAllocatedPercent()).isEqualTo(70);
+        assertThat(response.getRemainingCapacityPercent()).isEqualTo(30);
+    }
+
+    @Test
+    @DisplayName("Should track PENDING allocations without depleting capacity across other demands")
+    void testAssessAvailability_pendingAllocationsDoNotDepleteCapacity_butAreTracked() {
+        LocalDate startDate = LocalDate.of(2026, 11, 1);
+        LocalDate endDate = LocalDate.of(2026, 11, 30);
+
+        ResourceAllocation pendingAlloc = new ResourceAllocation(
+                activeEmployee, null, LocalDate.of(2026, 11, 5), LocalDate.of(2026, 11, 20),
+                50, AllocationStatus.PENDING, "PM"
+        );
+
+        when(employeeRepository.findById(1L)).thenReturn(Optional.of(activeEmployee));
+        when(unavailabilityRepository.findOverlappingUnavailabilities(1L, startDate, endDate))
+                .thenReturn(List.of());
+        when(allocationRepository.findOverlappingConfirmedAllocations(1L, startDate, endDate))
+                .thenReturn(List.of());
+        when(allocationRepository.findOverlappingPendingAllocations(1L, startDate, endDate))
+                .thenReturn(List.of(pendingAlloc));
+
+        AvailabilityAssessmentResponse response = availabilityService.assessEmployeeAvailability(
+                1L, startDate, endDate, 100
+        );
+
+        // Confirmed capacity is 100% available because PENDING proposals do not lock out other demands
+        assertThat(response.isAvailable()).isTrue();
+        assertThat(response.getPeakAllocatedPercent()).isEqualTo(0);
+        assertThat(response.getRemainingCapacityPercent()).isEqualTo(100);
+        assertThat(response.getPendingAllocationsCount()).isEqualTo(1);
+        assertThat(response.getPendingAllocationPercent()).isEqualTo(50);
+        assertThat(response.getReason()).contains("pending proposal(s) awaiting review");
+    }
+
+    @Test
+    @DisplayName("100% configured capacity with no confirmed allocations: shows 100% configured, 0% committed, 100% remaining")
+    void testAssessAvailability_100PercentConfigured_NoAllocations() {
+        LocalDate startDate = LocalDate.of(2026, 11, 1);
+        LocalDate endDate = LocalDate.of(2026, 11, 30);
+
+        when(employeeRepository.findById(1L)).thenReturn(Optional.of(activeEmployee));
+        when(unavailabilityRepository.findOverlappingUnavailabilities(1L, startDate, endDate)).thenReturn(List.of());
+        when(allocationRepository.findOverlappingConfirmedAllocations(1L, startDate, endDate)).thenReturn(List.of());
+        when(allocationRepository.findOverlappingPendingAllocations(1L, startDate, endDate)).thenReturn(List.of());
+
+        AvailabilityAssessmentResponse response = availabilityService.assessEmployeeAvailability(1L, startDate, endDate, 100);
+
+        assertThat(response.getMaxCapacityPercent()).isEqualTo(100);
+        assertThat(response.getPeakAllocatedPercent()).isEqualTo(0);
+        assertThat(response.getRemainingCapacityPercent()).isEqualTo(100);
+        assertThat(response.isAvailable()).isTrue();
+        assertThat(activeEmployee.getMaxCapacityPercent()).isEqualTo(100); // Configured capacity is immutable
+    }
+
+    @Test
+    @DisplayName("100% configured capacity with 70% confirmed allocation: shows 100% configured, 70% committed, 30% remaining")
+    void testAssessAvailability_100PercentConfigured_With70PercentConfirmed() {
+        LocalDate startDate = LocalDate.of(2026, 11, 1);
+        LocalDate endDate = LocalDate.of(2026, 11, 30);
+
+        ResourceAllocation alloc70 = new ResourceAllocation(
+                activeEmployee, null, LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 30),
+                70, AllocationStatus.CONFIRMED, "PM"
+        );
+
+        when(employeeRepository.findById(1L)).thenReturn(Optional.of(activeEmployee));
+        when(unavailabilityRepository.findOverlappingUnavailabilities(1L, startDate, endDate)).thenReturn(List.of());
+        when(allocationRepository.findOverlappingConfirmedAllocations(1L, startDate, endDate)).thenReturn(List.of(alloc70));
+        when(allocationRepository.findOverlappingPendingAllocations(1L, startDate, endDate)).thenReturn(List.of());
+
+        // Assessment for 30% requested allocation should succeed
+        AvailabilityAssessmentResponse response30 = availabilityService.assessEmployeeAvailability(1L, startDate, endDate, 30);
+        assertThat(response30.getMaxCapacityPercent()).isEqualTo(100);
+        assertThat(response30.getPeakAllocatedPercent()).isEqualTo(70);
+        assertThat(response30.getRemainingCapacityPercent()).isEqualTo(30);
+        assertThat(response30.isAvailable()).isTrue();
+
+        // Assessment for 40% requested allocation should fail
+        AvailabilityAssessmentResponse response40 = availabilityService.assessEmployeeAvailability(1L, startDate, endDate, 40);
+        assertThat(response40.getMaxCapacityPercent()).isEqualTo(100);
+        assertThat(response40.getPeakAllocatedPercent()).isEqualTo(70);
+        assertThat(response40.getRemainingCapacityPercent()).isEqualTo(30);
+        assertThat(response40.isAvailable()).isFalse();
+
+        // Crucial invariant: Allocations do NOT mutate configured capacity
+        assertThat(activeEmployee.getMaxCapacityPercent()).isEqualTo(100);
+    }
+
+    @Test
+    @DisplayName("30% configured capacity (Kavita Sharma model): shows 30% configured, 0% committed, 30% remaining")
+    void testAssessAvailability_30PercentConfigured_KavitaSharmaModel() {
+        activeEmployee.setMaxCapacityPercent(30);
+        LocalDate startDate = LocalDate.of(2026, 11, 1);
+        LocalDate endDate = LocalDate.of(2026, 11, 30);
+
+        when(employeeRepository.findById(1L)).thenReturn(Optional.of(activeEmployee));
+        when(unavailabilityRepository.findOverlappingUnavailabilities(1L, startDate, endDate)).thenReturn(List.of());
+        when(allocationRepository.findOverlappingConfirmedAllocations(1L, startDate, endDate)).thenReturn(List.of());
+        when(allocationRepository.findOverlappingPendingAllocations(1L, startDate, endDate)).thenReturn(List.of());
+
+        // 25% allocation request within 30% capacity succeeds
+        AvailabilityAssessmentResponse res25 = availabilityService.assessEmployeeAvailability(1L, startDate, endDate, 25);
+        assertThat(res25.getMaxCapacityPercent()).isEqualTo(30);
+        assertThat(res25.getPeakAllocatedPercent()).isEqualTo(0);
+        assertThat(res25.getRemainingCapacityPercent()).isEqualTo(30);
+        assertThat(res25.isAvailable()).isTrue();
+
+        // 50% allocation request exceeds 30% configured capacity limit and fails
+        AvailabilityAssessmentResponse res50 = availabilityService.assessEmployeeAvailability(1L, startDate, endDate, 50);
+        assertThat(res50.getMaxCapacityPercent()).isEqualTo(30);
+        assertThat(res50.getPeakAllocatedPercent()).isEqualTo(0);
+        assertThat(res50.getRemainingCapacityPercent()).isEqualTo(30);
+        assertThat(res50.isAvailable()).isFalse();
+        assertThat(res50.getReason()).contains("exceeds employee configured maximum capacity limit (30%)");
+    }
+
+    @Test
+    @DisplayName("30% configured capacity with 20% confirmed: shows 30% configured, 20% committed, 10% remaining")
+    void testAssessAvailability_30PercentConfigured_WithConfirmedAllocation() {
+        activeEmployee.setMaxCapacityPercent(30);
+        LocalDate startDate = LocalDate.of(2026, 11, 1);
+        LocalDate endDate = LocalDate.of(2026, 11, 30);
+
+        ResourceAllocation alloc20 = new ResourceAllocation(
+                activeEmployee, null, LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 30),
+                20, AllocationStatus.CONFIRMED, "PM"
+        );
+
+        when(employeeRepository.findById(1L)).thenReturn(Optional.of(activeEmployee));
+        when(unavailabilityRepository.findOverlappingUnavailabilities(1L, startDate, endDate)).thenReturn(List.of());
+        when(allocationRepository.findOverlappingConfirmedAllocations(1L, startDate, endDate)).thenReturn(List.of(alloc20));
+        when(allocationRepository.findOverlappingPendingAllocations(1L, startDate, endDate)).thenReturn(List.of());
+
+        AvailabilityAssessmentResponse res10 = availabilityService.assessEmployeeAvailability(1L, startDate, endDate, 10);
+        assertThat(res10.getMaxCapacityPercent()).isEqualTo(30);
+        assertThat(res10.getPeakAllocatedPercent()).isEqualTo(20);
+        assertThat(res10.getRemainingCapacityPercent()).isEqualTo(10);
+        assertThat(res10.isAvailable()).isTrue();
+
+        AvailabilityAssessmentResponse res15 = availabilityService.assessEmployeeAvailability(1L, startDate, endDate, 15);
+        assertThat(res15.getMaxCapacityPercent()).isEqualTo(30);
+        assertThat(res15.getPeakAllocatedPercent()).isEqualTo(20);
+        assertThat(res15.getRemainingCapacityPercent()).isEqualTo(10);
+        assertThat(res15.isAvailable()).isFalse();
+    }
 }

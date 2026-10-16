@@ -35,7 +35,7 @@ import com.talentmarketplace.repository.ResourceAllocationRepository;
 import javax.sql.DataSource;
 
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 class EmployeeUnavailabilityControllerIntegrationTest {
 
     @Autowired
@@ -168,6 +168,57 @@ class EmployeeUnavailabilityControllerIntegrationTest {
         mockMvc.perform(post("/api/employees/999999/unavailability")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404));
+    }
+
+    @Test
+    @DisplayName("GET /api/employees/{id}/unavailability: returns empty array when employee has zero leave records")
+    void getEmployeeUnavailabilities_ZeroRecords_ReturnsEmptyArray_Singular() throws Exception {
+        mockMvc.perform(get("/api/employees/" + employee.getId() + "/unavailability"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data.length()").value(0));
+    }
+
+    @Test
+    @DisplayName("GET /api/employees/{id}/unavailabilities (plural): returns empty array when employee has zero leave records")
+    void getEmployeeUnavailabilities_ZeroRecords_ReturnsEmptyArray_Plural() throws Exception {
+        mockMvc.perform(get("/api/employees/" + employee.getId() + "/unavailabilities"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data.length()").value(0));
+    }
+
+    @Test
+    @DisplayName("GET /api/employees/{id}/unavailabilities (plural): returns employee leaves when records exist")
+    void getEmployeeUnavailabilities_WithRecords_PluralRoute() throws Exception {
+        CreateUnavailabilityRequest req = new CreateUnavailabilityRequest(
+                LocalDate.of(2025, 10, 1),
+                LocalDate.of(2025, 10, 5),
+                UnavailabilityType.TRAINING,
+                "Tech workshop"
+        );
+
+        mockMvc.perform(post("/api/employees/" + employee.getId() + "/unavailabilities")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/employees/" + employee.getId() + "/unavailabilities"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].type").value("TRAINING"))
+                .andExpect(jsonPath("$.data[0].reason").value("Tech workshop"));
+    }
+
+    @Test
+    @DisplayName("GET /api/employees/{id}/unavailabilities (plural): returns 404 when employee does not exist")
+    void getEmployeeUnavailabilities_EmployeeNotFound_Returns404() throws Exception {
+        mockMvc.perform(get("/api/employees/999999/unavailabilities"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.status").value(404));
     }

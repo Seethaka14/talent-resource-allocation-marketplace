@@ -14,6 +14,133 @@
   ],
   "item": [
     {
+      "name": "00. Authentication & Roles",
+      "item": [
+        {
+          "name": "Sign In as Project Manager",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"pm@talentmarketplace.com\",\n  \"password\": \"PM_pass123!\",\n  \"requiredRole\": \"PROJECT_MANAGER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Authenticates as a Project Manager through the Project Manager portal, establishing a secure HTTP-only session cookie."
+          }
+        },
+        {
+          "name": "Sign In as Resource Manager",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"rm@talentmarketplace.com\",\n  \"password\": \"RM_pass123!\",\n  \"requiredRole\": \"RESOURCE_MANAGER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Authenticates as a Resource Manager through the Resource Manager portal, establishing a secure HTTP-only session cookie."
+          }
+        },
+        {
+          "name": "Get Current User Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Returns the currently authenticated user's profile metadata (id, name, email, role, enabled). Returns 401 if unauthenticated."
+          }
+        },
+        {
+          "name": "Reject Login with Role Mismatch (RM into PM Portal)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"rm@talentmarketplace.com\",\n  \"password\": \"RM_pass123!\",\n  \"requiredRole\": \"PROJECT_MANAGER\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Demonstrates role validation enforcement: attempting to log into the PM portal with a Resource Manager account returns 403 Forbidden with a clear role mismatch error."
+          }
+        },
+        {
+          "name": "Sign Out",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Invalidates the active session and clears the security context."
+          }
+        }
+      ]
+    },
+    {
       "name": "01. System Health",
       "item": [
         {
@@ -507,6 +634,25 @@
           }
         },
         {
+          "name": "Preview Next Demand Code",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/demands/next-code",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "demands",
+                "next-code"
+              ]
+            },
+            "description": "Previews the next formatted sequential business demand code (e.g. DEM-2026-0004) generated atomically from database sequence tracking."
+          }
+        },
+        {
           "name": "Create Project Demand - Success",
           "request": {
             "method": "POST",
@@ -859,7 +1005,7 @@
                 "confirm"
               ]
             },
-            "description": "Confirms an allocation using Phase 7 pessimistic write lock on employee record, guaranteeing capacity safety."
+            "description": "Confirms an allocation using Phase 7 pessimistic write lock on employee record, guaranteeing capacity safety. Requires RESOURCE_MANAGER role session."
           }
         },
         {
@@ -874,21 +1020,21 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"rejectionReason\": \"Resource required on urgent production incident\",\n  \"rejectedBy\": \"Resource Manager\"\n}"
+              "raw": "{\n  \"reason\": \"Resource required on urgent production incident\",\n  \"rejectedBy\": \"Resource Manager\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/allocations/1/reject",
+              "raw": "{{baseUrl}}/api/allocations/2/reject",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "allocations",
-                "1",
+                "2",
                 "reject"
               ]
             },
-            "description": "Rejects a pending allocation, updating status to REJECTED."
+            "description": "Rejects a separate pending draft allocation (Allocation ID 2 in PENDING state) with mandatory audit reason and author. Requires RESOURCE_MANAGER role session. (Note: cannot reject an already CONFIRMED allocation)."
           }
         },
         {

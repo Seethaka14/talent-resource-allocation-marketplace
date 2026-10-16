@@ -16,22 +16,23 @@ This document provides a comprehensive visual verification guide for the **AI-Dr
 
 | # | Screen Description | Target File Path | Backing REST Endpoint / Function | Verification Status |
 |---|-------------------|------------------|----------------------------------|:-------------------:|
-| 0 | Marketplace Executive Dashboard | `docs/screenshots/00_marketplace_dashboard.png` | `GET /api/demands`, `GET /api/employees`, `GET /api/allocations` | **Captured & Verified** |
-| 1 | Demand Intake / Project Demands | `docs/screenshots/01_demand_intake.png` | `GET /api/demands`, `POST /api/demands` | **Captured & Verified** |
-| 2 | Employee Skills Matrix | `docs/screenshots/02_employee_skills_matrix.png` | `GET /api/employees`, `GET /api/skills` | **Captured & Verified** |
-| 3 | Candidate Ranking & Score Breakdown | `docs/screenshots/03_candidate_ranking_breakdown.png` | `GET /api/demands/50/candidates` | **Captured & Verified** |
-| 4 | Candidate Comparison Matrix | `docs/screenshots/04_candidate_comparison.png` | `GET /api/demands/50/candidates` | **Captured & Verified** |
-| 5 | Allocation Approval Workflow | `docs/screenshots/05_allocation_approval_workflow.png` | `POST /api/allocations`, `POST /api/allocations/{id}/confirm` | **Captured & Verified** |
-| 6 | Utilization Dashboard (Date Window) | `docs/screenshots/06_utilization_dashboard_window.png` | `GET /api/analytics/reports/utilization-by-employee-department` | **Captured & Verified** |
-| 7 | AI Assistant with Tool Grounding | `docs/screenshots/07_ai_assistant_tool_grounding.png` | `POST /api/assistant/chat` | **Captured & Verified** |
-| 8 | Mobile Drawer Navigation (768px Viewport) | `docs/screenshots/08_mobile_drawer_navigation.png` | Collapsible Off-Canvas Drawer | **Captured & Verified** |
+| 0 | Marketplace Executive Dashboard | `docs/screenshots/00_Marketplace_executive_dashboard.png` | `GET /api/demands`, `GET /api/employees`, `GET /api/allocations` | **Captured & Verified** |
+| 1 | Demand Intake / Project Demands | `docs/screenshots/01_Demand_intake.png` | `GET /api/demands`, `POST /api/demands` | **Captured & Verified** |
+| 2 | Employee Skills Matrix | `docs/screenshots/02_Employee_skill_matrix.png` | `GET /api/employees`, `GET /api/skills` | **Captured & Verified** |
+| 3 | Candidate Ranking & Score Breakdown | `docs/screenshots/03_Resource_ranking.png` | `GET /api/demands/50/candidates` | **Captured & Verified** |
+| 4 | Candidate Comparison Matrix | `docs/screenshots/04_Candidate_comparision.png` | `GET /api/demands/50/candidates` | **Captured & Verified** |
+| 5 | Allocation Approval Workflow | `docs/screenshots/05_Resource_approvals.png` | `POST /api/allocations`, `POST /api/allocations/{id}/confirm` | **Captured & Verified** |
+| 6 | Utilization Dashboard (Date Window) | `docs/screenshots/06_Resource_utilization.png` | `GET /api/analytics/reports/utilization-by-employee-department` | **Captured & Verified** |
+| 7 | Enterprise Skill Shortage Analysis | `docs/screenshots/07_Skill_gap_analysis.png` | `GET /api/analytics/reports/skill-gaps-by-category` | **Captured & Verified** |
+| 8 | AI Staffing Agent Assistant Panel | `docs/screenshots/08_AI_staffing_agent_assistant.png` | `POST /api/assistant/chat`, `GET /api/assistant/status` | **Captured & Verified** |
+| 9 | Maven Automated Test Execution (223 Tests) | `docs/screenshots/Test_results.png` | `.\mvnw.cmd test` | **Captured & Verified** |
 
 ---
 
 ## 3. Screen-by-Screen UI Specification & Inspection Criteria
 
 ### Screen 0: Marketplace Executive Dashboard
-- **File**: `docs/screenshots/00_marketplace_dashboard.png`
+- **File**: `docs/screenshots/00_Marketplace_executive_dashboard.png`
 - **Navigation**: Click **"Dashboard"** in the left sidebar.
 - **Backing APIs**: `GET /api/demands`, `GET /api/employees`, `GET /api/allocations`
 - **Expected UI Elements**:
@@ -47,7 +48,7 @@ This document provides a comprehensive visual verification guide for the **AI-Dr
 ---
 
 ### Screen 1: Project Demand Intake
-- **File**: `docs/screenshots/01_demand_intake.png`
+- **File**: `docs/screenshots/01_Demand_intake.png`
 - **Navigation**: Click **"Project Demands"** in the left sidebar.
 - **Backing API**: `GET /api/demands`, `POST /api/demands`
 - **Expected UI Elements**:
@@ -58,7 +59,7 @@ This document provides a comprehensive visual verification guide for the **AI-Dr
 ---
 
 ### Screen 2: Employee Skills Matrix
-- **File**: `docs/screenshots/02_employee_skills_matrix.png`
+- **File**: `docs/screenshots/02_Employee_skill_matrix.png`
 - **Navigation**: Click **"Employee Skills Matrix"** in the left sidebar.
 - **Backing API**: `GET /api/employees` and `GET /api/employees/{id}/skills`
 - **Expected UI Elements**:
@@ -68,7 +69,7 @@ This document provides a comprehensive visual verification guide for the **AI-Dr
 ---
 
 ### Screen 3: Candidate Recommendation & Ranking with Authoritative Score Breakdown
-- **File**: `docs/screenshots/03_candidate_ranking_breakdown.png`
+- **File**: `docs/screenshots/03_Resource_ranking.png`
 - **Navigation**: Click **"Resource Ranking"** in the left sidebar. Select a target demand (e.g., Demand 50).
 - **Backing API**: `GET /api/demands/50/candidates`
 - **Expected UI Elements**:
@@ -84,7 +85,7 @@ This document provides a comprehensive visual verification guide for the **AI-Dr
 ---
 
 ### Screen 4: Candidate Side-by-Side Comparison Matrix
-- **File**: `docs/screenshots/04_candidate_comparison.png`
+- **File**: `docs/screenshots/04_Candidate_comparision.png`
 - **Navigation**: Click **"Candidate Comparison"** in the left sidebar or click "Compare Selected" from Screen 3.
 - **Backing API**: `GET /api/demands/50/candidates`
 - **Expected UI Elements**:
@@ -94,7 +95,7 @@ This document provides a comprehensive visual verification guide for the **AI-Dr
 ---
 
 ### Screen 5: Allocation Approval Workflow & Concurrency Management
-- **File**: `docs/screenshots/05_allocation_approval_workflow.png`
+- **File**: `docs/screenshots/05_Resource_approvals.png`
 - **Navigation**: Click **"Allocation Approvals"** in the left sidebar.
 - **Backing API**: `GET /api/allocations`, `POST /api/allocations`, `POST /api/allocations/{id}/confirm`
 - **Expected UI Elements**:
@@ -106,21 +107,29 @@ This document provides a comprehensive visual verification guide for the **AI-Dr
 
 ---
 
-### Screen 6: Utilization and Skill-Gap Analytics Dashboard (Date Window Evaluated)
-- **File**: `docs/screenshots/06_utilization_dashboard_window.png`
+### Screen 6: Utilization Dashboard (Date Window Evaluated)
+- **File**: `docs/screenshots/06_Resource_utilization.png`
 - **Navigation**: Click **"Utilization & Skill Gaps"** in the left sidebar.
 - **Backing API**: `GET /api/analytics/reports/utilization-by-employee-department`
 - **Expected UI Elements**:
   - Date window evaluation bar (`Window Start`, `Window End`, `Department`, and `Apply Window` button).
   - KPI metric cards: Active Headcount, Open Project Demands, Confirmed Allocations, and Avg Window Utilization (Peak vs Time-Weighted Avg).
-  - Two-column analytical breakdown:
-    - **Left**: Employee Capacity Utilization showing peak simultaneous commitment and time-weighted averages across window.
-    - **Right**: Skill Shortage & Gap Analysis showing demanded skills, categories, supply counts, and net deficit badges (`DEFICIT: -X` or `ADEQUATE`).
+  - Full-width Employee Capacity Utilization table showing peak simultaneous commitment and time-weighted averages across window.
 
 ---
 
-### Screen 7: AI Assistant with Grounded Tool Execution
-- **File**: `docs/screenshots/07_ai_assistant_tool_grounding.png`
+### Screen 7: Enterprise Skill Shortage Analysis
+- **File**: `docs/screenshots/07_Skill_gap_analysis.png`
+- **Navigation**: Click **"Utilization & Skill Gaps"** in the left sidebar, then select **"Skill Gap Analysis"** sub-tab.
+- **Backing API**: `GET /api/analytics/reports/skill-gaps-by-category`
+- **Expected UI Elements**:
+  - Net deficit summary cards: Categories with Deficit and Total Unmet Demand Slots.
+  - Enterprise Skill Shortage table displaying Demanded Skill, Minimum Proficiency, Mandatory Count, Category, Demands Count, Qualified Supply, and Net Deficit status badges (`DEFICIT: -X` or `ADEQUATE`).
+
+---
+
+### Screen 8: AI Staffing Agent Assistant Panel
+- **File**: `docs/screenshots/08_AI_staffing_agent_assistant.png`
 - **Navigation**: Click **"AI Assistant"** in the left sidebar.
 - **Backing API**: `POST /api/assistant/chat`, `GET /api/assistant/status`
 - **Expected UI Elements**:
@@ -131,11 +140,11 @@ This document provides a comprehensive visual verification guide for the **AI-Dr
 
 ---
 
-### Screen 8: Mobile Drawer Navigation
-- **File**: `docs/screenshots/08_mobile_drawer_navigation.png`
-- **Navigation**: Resize browser viewport to `<= 992px` (e.g., `768px` tablet/mobile width). Click the hamburger menu toggle button in the mobile topbar.
-- **Expected UI Elements**:
-  - Mobile topbar with hamburger toggle button (`sidebarToggleBtn`), centered brand title, and Ollama status dot.
-  - Smooth slide-in off-canvas navigation drawer (`width: 280px`) with full list of 8 navigation items.
-  - Backdrop blur overlay (`sidebarBackdrop`) dimming main content.
-  - Close button (`sidebarCloseBtn`) and tap-to-close on any navigation tab or backdrop click.
+### Verification Artifact 9: Maven Automated Test Execution Evidence
+- **File**: `docs/screenshots/Test_results.png`
+- **Execution Command**: `.\mvnw.cmd test`
+- **Expected Evidence Elements**:
+  - Full test execution terminal output.
+  - Final summary: `Tests run: 223, Failures: 0, Errors: 0, Skipped: 0`.
+  - Overall status: `BUILD SUCCESS`.
+

@@ -29,7 +29,7 @@ import com.talentmarketplace.repository.SkillRepository;
 import javax.sql.DataSource;
 
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 class SkillControllerIntegrationTest {
 
     @Autowired

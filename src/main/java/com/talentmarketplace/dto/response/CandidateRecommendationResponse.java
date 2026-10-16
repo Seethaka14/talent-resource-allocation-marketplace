@@ -29,6 +29,9 @@ public class CandidateRecommendationResponse {
     private List<String> exclusionReasons = new ArrayList<>();
     private String matchExplanation;
 
+    private com.talentmarketplace.entity.AllocationStatus existingAllocationStatus;
+    private Long existingAllocationId;
+
     public CandidateRecommendationResponse() {
     }
 
@@ -41,6 +44,23 @@ public class CandidateRecommendationResponse {
                                            List<SkillMatchDetail> missingOptionalSkills,
                                            AvailabilityAssessmentResponse availabilityAssessment,
                                            List<String> exclusionReasons, String matchExplanation) {
+        this(employeeId, employeeCode, employeeName, department, designation, location,
+                employmentStatus, eligible, totalScore, skillScore, availabilityScore,
+                locationScore, matchedSkills, missingMandatorySkills, missingOptionalSkills,
+                availabilityAssessment, exclusionReasons, matchExplanation, null, null);
+    }
+
+    public CandidateRecommendationResponse(Long employeeId, String employeeCode, String employeeName,
+                                           String department, String designation, String location,
+                                           EmploymentStatus employmentStatus, boolean eligible,
+                                           double totalScore, double skillScore, double availabilityScore,
+                                           double locationScore, List<SkillMatchDetail> matchedSkills,
+                                           List<SkillMatchDetail> missingMandatorySkills,
+                                           List<SkillMatchDetail> missingOptionalSkills,
+                                           AvailabilityAssessmentResponse availabilityAssessment,
+                                           List<String> exclusionReasons, String matchExplanation,
+                                           com.talentmarketplace.entity.AllocationStatus existingAllocationStatus,
+                                           Long existingAllocationId) {
         this.employeeId = employeeId;
         this.employeeCode = employeeCode;
         this.employeeName = employeeName;
@@ -59,6 +79,8 @@ public class CandidateRecommendationResponse {
         this.availabilityAssessment = availabilityAssessment;
         this.exclusionReasons = exclusionReasons != null ? exclusionReasons : new ArrayList<>();
         this.matchExplanation = matchExplanation;
+        this.existingAllocationStatus = existingAllocationStatus;
+        this.existingAllocationId = existingAllocationId;
     }
 
     public Long getEmployeeId() {
@@ -203,5 +225,21 @@ public class CandidateRecommendationResponse {
 
     public void setMatchExplanation(String matchExplanation) {
         this.matchExplanation = matchExplanation;
+    }
+
+    public com.talentmarketplace.entity.AllocationStatus getExistingAllocationStatus() {
+        return existingAllocationStatus;
+    }
+
+    public void setExistingAllocationStatus(com.talentmarketplace.entity.AllocationStatus existingAllocationStatus) {
+        this.existingAllocationStatus = existingAllocationStatus;
+    }
+
+    public Long getExistingAllocationId() {
+        return existingAllocationId;
+    }
+
+    public void setExistingAllocationId(Long existingAllocationId) {
+        this.existingAllocationId = existingAllocationId;
     }
 }

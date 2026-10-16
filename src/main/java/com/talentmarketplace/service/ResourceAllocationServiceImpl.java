@@ -2,6 +2,7 @@ package com.talentmarketplace.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -13,13 +14,17 @@ import com.talentmarketplace.dto.request.RejectAllocationRequest;
 import com.talentmarketplace.dto.response.AllocationResponse;
 import com.talentmarketplace.dto.response.AvailabilityAssessmentResponse;
 import com.talentmarketplace.entity.AllocationStatus;
+import com.talentmarketplace.entity.DemandSkill;
 import com.talentmarketplace.entity.DemandStatus;
 import com.talentmarketplace.entity.Employee;
+import com.talentmarketplace.entity.EmployeeSkill;
+import com.talentmarketplace.entity.EmploymentStatus;
 import com.talentmarketplace.entity.ProjectDemand;
 import com.talentmarketplace.entity.ResourceAllocation;
 import com.talentmarketplace.exception.BusinessRuleValidationException;
 import com.talentmarketplace.exception.ResourceNotFoundException;
 import com.talentmarketplace.repository.EmployeeRepository;
+import com.talentmarketplace.repository.EmployeeSkillRepository;
 import com.talentmarketplace.repository.ProjectDemandRepository;
 import com.talentmarketplace.repository.ResourceAllocationRepository;
 
@@ -31,15 +36,18 @@ public class ResourceAllocationServiceImpl implements ResourceAllocationService 
     private final EmployeeRepository employeeRepository;
     private final ProjectDemandRepository demandRepository;
     private final AvailabilityService availabilityService;
+    private final EmployeeSkillRepository employeeSkillRepository;
 
     public ResourceAllocationServiceImpl(ResourceAllocationRepository allocationRepository,
                                          EmployeeRepository employeeRepository,
                                          ProjectDemandRepository demandRepository,
-                                         AvailabilityService availabilityService) {
+                                         AvailabilityService availabilityService,
+                                         EmployeeSkillRepository employeeSkillRepository) {
         this.allocationRepository = allocationRepository;
         this.employeeRepository = employeeRepository;
         this.demandRepository = demandRepository;
         this.availabilityService = availabilityService;
+        this.employeeSkillRepository = employeeSkillRepository;
     }
 
     @Override
@@ -56,6 +64,15 @@ public class ResourceAllocationServiceImpl implements ResourceAllocationService 
 
         if (demand.getStatus() == DemandStatus.CANCELLED) {
             throw new BusinessRuleValidationException("Cannot allocate resources to a cancelled demand");
+        }
+
+        // Prevent duplicate active allocations (PENDING or CONFIRMED) for the same employee and demand
+        if (allocationRepository.existsActiveAllocationForEmployeeAndDemand(
+                employee.getId(), demand.getId(), List.of(AllocationStatus.PENDING, AllocationStatus.CONFIRMED))) {
+            throw new BusinessRuleValidationException(String.format(
+                    "An active allocation request (PENDING or CONFIRMED) already exists for employee %s on demand %s",
+                    employee.getName(), demand.getDemandCode()
+            ));
         }
 
         // Pre-validate availability
@@ -130,7 +147,42 @@ public class ResourceAllocationServiceImpl implements ResourceAllocationService 
             throw new BusinessRuleValidationException("Cannot confirm allocation for a cancelled project demand");
         }
 
-        // Concurrency-Safe Revalidation: Recalculate capacity after obtaining the lock,
+        // 1. Concurrency-Safe Eligibility Revalidation inside transaction:
+        // Employee must be actively employed
+        if (employee.getEmploymentStatus() != EmploymentStatus.ACTIVE) {
+            throw new BusinessRuleValidationException(
+                    "Allocation confirmation failed: Employee is not active (current status: " + employee.getEmploymentStatus() + ")"
+            );
+        }
+
+        // Must meet all mandatory skill requirements of the demand
+        ProjectDemand demandWithSkills = demandRepository.findByIdWithSkills(demand.getId()).orElse(demand);
+        List<DemandSkill> requiredSkills = demandWithSkills.getRequiredSkills();
+        if (requiredSkills != null && !requiredSkills.isEmpty()) {
+            List<EmployeeSkill> empSkills = employeeSkillRepository.findByEmployeeIdWithDetails(employee.getId());
+            Map<Long, EmployeeSkill> empSkillMap = empSkills.stream()
+                    .filter(es -> es.getSkill() != null)
+                    .collect(Collectors.toMap(es -> es.getSkill().getId(), es -> es, (a, b) -> a));
+
+            for (DemandSkill ds : requiredSkills) {
+                if (ds.isMandatory()) {
+                    EmployeeSkill es = empSkillMap.get(ds.getSkill().getId());
+                    if (es == null) {
+                        throw new BusinessRuleValidationException(
+                                "Allocation confirmation failed: Employee lacks mandatory skill requirement: " + ds.getSkill().getName()
+                        );
+                    }
+                    if (!es.getProficiencyLevel().meetsMinimumRequirement(ds.getMinimumProficiency())) {
+                        throw new BusinessRuleValidationException(String.format(
+                                "Allocation confirmation failed: Employee proficiency in mandatory skill '%s' (%s) does not meet minimum requirement (%s)",
+                                ds.getSkill().getName(), es.getProficiencyLevel(), ds.getMinimumProficiency()
+                        ));
+                    }
+                }
+            }
+        }
+
+        // 2. Concurrency-Safe Capacity & Availability Revalidation: Recalculate capacity after obtaining the lock,
         // reading all newly committed overlapping confirmed allocations under READ_COMMITTED.
         AvailabilityAssessmentResponse assessment = availabilityService.assessEmployeeAvailabilityExcludingAllocation(
                 employee, allocation.getStartDate(), allocation.getEndDate(), allocation.getAllocationPercent(), allocation.getId()
@@ -187,6 +239,28 @@ public class ResourceAllocationServiceImpl implements ResourceAllocationService 
             }
         }
 
+        return AllocationResponse.fromEntity(saved);
+    }
+
+    @Override
+    public AllocationResponse completeAllocation(Long allocationId) {
+        ResourceAllocation allocation = allocationRepository.findByIdWithDetails(allocationId)
+                .orElseThrow(() -> new ResourceNotFoundException("ResourceAllocation", "id", allocationId));
+
+        if (allocation.getStatus() == AllocationStatus.COMPLETED) {
+            return AllocationResponse.fromEntity(allocation);
+        }
+
+        if (allocation.getStatus() != AllocationStatus.CONFIRMED) {
+            throw new BusinessRuleValidationException(
+                    "Only CONFIRMED allocations can be marked as COMPLETED. Current status: " + allocation.getStatus()
+            );
+        }
+
+        allocation.setStatus(AllocationStatus.COMPLETED);
+        ResourceAllocation saved = allocationRepository.save(allocation);
+
+        // Project allocation history is fully preserved.
         return AllocationResponse.fromEntity(saved);
     }
 

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resource Manager Sign In - Talent Marketplace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .auth-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1.5rem;
+            background: radial-gradient(circle at 50% 20%, rgba(99, 102, 241, 0.12) 0%, transparent 60%), var(--bg-primary);
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 440px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 2.5rem 2rem;
+            box-shadow: var(--shadow-modal);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .auth-card h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-align: center;
+            letter-spacing: -0.02em;
+            line-height: 1.25;
+            margin: 0;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+        }
+
+        .form-group label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .password-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .password-input-wrapper input {
+            width: 100%;
+            padding-right: 2.75rem;
+        }
+
+        .password-toggle-btn {
+            position: absolute;
+            right: 0.75rem;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+        }
+
+        .password-toggle-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 0.85rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            border-radius: var(--radius-sm);
+            background: var(--accent-primary);
+            color: #ffffff;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .btn-submit:hover:not(:disabled) {
+            background: var(--accent-primary-hover);
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .auth-back-link {
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+
+        .auth-back-link a {
+            color: #818cf8;
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .auth-back-link a:hover {
+            color: #a5b4fc;
+            text-decoration: underline;
+        }
+
+        .auth-error-banner {
+            padding: 0.75rem 1rem;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            line-height: 1.4;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-wrapper">
+        <div class="auth-card">
+            <h1>Welcome Back, Resource Manager!</h1>
+
+            <div class="auth-error-banner" id="authErrorBanner" role="alert"></div>
+
+            <form id="rmLoginForm" novalidate>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" class="form-control" placeholder="name@company.com" required autocomplete="email">
+                </div>
+
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label for="password">Password</label>
+                    <div class="password-input-wrapper">
+                        <input type="password" id="password" name="password" class="form-control" placeholder="Enter password" required autocomplete="current-password">
+                        <button type="button" class="password-toggle-btn" id="btnTogglePassword" aria-label="Toggle password visibility">
+                            <svg id="eyeIcon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit" id="btnSignIn">
+                    <span>Sign In</span>
+                </button>
+            </form>
+
+            <div class="auth-back-link">
+                <a href="/login">&larr; Back to role selection</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const rmLoginForm = document.getElementById('rmLoginForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const btnTogglePassword = document.getElementById('btnTogglePassword');
+        const eyeIcon = document.getElementById('eyeIcon');
+        const authErrorBanner = document.getElementById('authErrorBanner');
+        const btnSignIn = document.getElementById('btnSignIn');
+
+        // Toggle password show/hide
+        btnTogglePassword.addEventListener('click', () => {
+            const isPassword = passwordInput.type === 'password';
+            passwordInput.type = isPassword ? 'text' : 'password';
+            eyeIcon.innerHTML = isPassword
+                ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>'
+                : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+        });
+
+        // Submit handler
+        rmLoginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            authErrorBanner.style.display = 'none';
+
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+
+            if (!email || !password) {
+                authErrorBanner.textContent = 'Please enter both email and password.';
+                authErrorBanner.style.display = 'block';
+                return;
+            }
+
+            btnSignIn.disabled = true;
+            btnSignIn.innerHTML = '<span>Signing In...</span>';
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: email,
+                        password: password,
+                        requiredRole: 'RESOURCE_MANAGER'
+                    })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    window.location.href = '/';
+                } else {
+                    const message = data.message || 'Authentication failed. Please verify your credentials.';
+                    authErrorBanner.textContent = message;
+                    authErrorBanner.style.display = 'block';
+                }
+            } catch (err) {
+                authErrorBanner.textContent = 'Unable to connect to the authentication service. Please try again.';
+                authErrorBanner.style.display = 'block';
+            } finally {
+                btnSignIn.disabled = false;
+                btnSignIn.innerHTML = '<span>Sign In</span>';
+            }
+        });
+    </script>
+</body>
+</html>

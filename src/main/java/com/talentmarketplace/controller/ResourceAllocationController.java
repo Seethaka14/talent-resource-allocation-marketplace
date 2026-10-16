@@ -68,6 +68,12 @@ public class ResourceAllocationController {
         return ResponseEntity.ok(ApiResponse.ok("Resource allocation cancelled successfully", response));
     }
 
+    @PostMapping("/{id}/complete")
+    public ResponseEntity<ApiResponse<AllocationResponse>> completeAllocation(@PathVariable Long id) {
+        AllocationResponse response = allocationService.completeAllocation(id);
+        return ResponseEntity.ok(ApiResponse.ok("Resource allocation completed successfully", response));
+    }
+
     @PostMapping("/{id}/reject")
     public ResponseEntity<ApiResponse<AllocationResponse>> rejectAllocation(
             @PathVariable Long id,

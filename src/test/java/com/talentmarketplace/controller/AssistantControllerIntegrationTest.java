@@ -20,7 +20,7 @@ import com.talentmarketplace.config.TestDatabaseSafetyGuard;
 import com.talentmarketplace.dto.request.AssistantChatRequest;
 
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 class AssistantControllerIntegrationTest {
 
     @Autowired

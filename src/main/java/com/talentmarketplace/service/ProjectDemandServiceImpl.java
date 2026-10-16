@@ -32,13 +32,16 @@ public class ProjectDemandServiceImpl implements ProjectDemandService {
     private final ProjectDemandRepository demandRepository;
     private final SkillRepository skillRepository;
     private final DemandSkillRepository demandSkillRepository;
+    private final DemandCodeGeneratorService demandCodeGeneratorService;
 
     public ProjectDemandServiceImpl(ProjectDemandRepository demandRepository,
                                     SkillRepository skillRepository,
-                                    DemandSkillRepository demandSkillRepository) {
+                                    DemandSkillRepository demandSkillRepository,
+                                    DemandCodeGeneratorService demandCodeGeneratorService) {
         this.demandRepository = demandRepository;
         this.skillRepository = skillRepository;
         this.demandSkillRepository = demandSkillRepository;
+        this.demandCodeGeneratorService = demandCodeGeneratorService;
     }
 
     @Override
@@ -51,9 +54,14 @@ public class ProjectDemandServiceImpl implements ProjectDemandService {
             throw new BusinessRuleValidationException("Allocation percent must be between 1 and 100");
         }
 
-        String trimmedCode = request.getDemandCode().trim();
-        if (demandRepository.existsByDemandCode(trimmedCode)) {
-            throw new DuplicateResourceException("ProjectDemand", "demandCode", trimmedCode);
+        String trimmedCode;
+        if (request.getDemandCode() == null || request.getDemandCode().trim().isEmpty()) {
+            trimmedCode = demandCodeGeneratorService.generateNextDemandCode();
+        } else {
+            trimmedCode = request.getDemandCode().trim();
+            if (demandRepository.existsByDemandCode(trimmedCode)) {
+                throw new DuplicateResourceException("ProjectDemand", "demandCode", trimmedCode);
+            }
         }
 
         ProjectDemand demand = new ProjectDemand(
@@ -116,7 +124,8 @@ public class ProjectDemandServiceImpl implements ProjectDemandService {
     @Override
     @Transactional(readOnly = true)
     public DemandResponse getDemandById(Long id) {
-        ProjectDemand demand = demandRepository.findById(id)
+        ProjectDemand demand = demandRepository.findByIdWithSkills(id)
+                .or(() -> demandRepository.findById(id))
                 .orElseThrow(() -> new ResourceNotFoundException("ProjectDemand", "id", id));
         return DemandResponse.fromEntity(demand);
     }
@@ -124,14 +133,16 @@ public class ProjectDemandServiceImpl implements ProjectDemandService {
     @Override
     @Transactional(readOnly = true)
     public DemandResponse getDemandByCode(String demandCode) {
-        ProjectDemand demand = demandRepository.findByDemandCode(demandCode.trim())
+        ProjectDemand demand = demandRepository.findByDemandCodeWithSkills(demandCode.trim())
+                .or(() -> demandRepository.findByDemandCode(demandCode.trim()))
                 .orElseThrow(() -> new ResourceNotFoundException("ProjectDemand", "demandCode", demandCode));
         return DemandResponse.fromEntity(demand);
     }
 
     @Override
     public DemandResponse updateDemand(Long id, UpdateDemandRequest request) {
-        ProjectDemand demand = demandRepository.findById(id)
+        ProjectDemand demand = demandRepository.findByIdWithSkills(id)
+                .or(() -> demandRepository.findById(id))
                 .orElseThrow(() -> new ResourceNotFoundException("ProjectDemand", "id", id));
 
         if (demand.getStatus() == DemandStatus.CANCELLED) {

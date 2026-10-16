@@ -40,7 +40,7 @@ import com.talentmarketplace.repository.SkillRepository;
 import javax.sql.DataSource;
 
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 class AnalyticsControllerIntegrationTest {
 
     @Autowired

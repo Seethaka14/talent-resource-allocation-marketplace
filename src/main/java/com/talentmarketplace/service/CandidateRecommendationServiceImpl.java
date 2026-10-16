@@ -2,6 +2,7 @@ package com.talentmarketplace.service;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -13,16 +14,20 @@ import com.talentmarketplace.dto.response.AvailabilityAssessmentResponse;
 import com.talentmarketplace.dto.response.CandidateRecommendationResponse;
 import com.talentmarketplace.dto.response.DemandRecommendationListResponse;
 import com.talentmarketplace.dto.response.SkillMatchDetail;
+import com.talentmarketplace.entity.AllocationStatus;
 import com.talentmarketplace.entity.DemandSkill;
 import com.talentmarketplace.entity.Employee;
 import com.talentmarketplace.entity.EmployeeSkill;
 import com.talentmarketplace.entity.EmploymentStatus;
 import com.talentmarketplace.entity.ProficiencyLevel;
 import com.talentmarketplace.entity.ProjectDemand;
+import com.talentmarketplace.entity.ResourceAllocation;
+import com.talentmarketplace.exception.BusinessRuleValidationException;
 import com.talentmarketplace.exception.ResourceNotFoundException;
 import com.talentmarketplace.repository.EmployeeRepository;
 import com.talentmarketplace.repository.EmployeeSkillRepository;
 import com.talentmarketplace.repository.ProjectDemandRepository;
+import com.talentmarketplace.repository.ResourceAllocationRepository;
 
 @Service
 @Transactional(readOnly = true)
@@ -32,29 +37,63 @@ public class CandidateRecommendationServiceImpl implements CandidateRecommendati
     private final EmployeeRepository employeeRepository;
     private final EmployeeSkillRepository employeeSkillRepository;
     private final AvailabilityService availabilityService;
+    private final ResourceAllocationRepository allocationRepository;
 
     public CandidateRecommendationServiceImpl(ProjectDemandRepository demandRepository,
                                              EmployeeRepository employeeRepository,
                                              EmployeeSkillRepository employeeSkillRepository,
-                                             AvailabilityService availabilityService) {
+                                             AvailabilityService availabilityService,
+                                             ResourceAllocationRepository allocationRepository) {
         this.demandRepository = demandRepository;
         this.employeeRepository = employeeRepository;
         this.employeeSkillRepository = employeeSkillRepository;
         this.availabilityService = availabilityService;
+        this.allocationRepository = allocationRepository;
     }
 
     @Override
     public DemandRecommendationListResponse recommendCandidatesForDemand(
             Long demandId, Boolean eligibleOnly, Double minScore, Integer limit) {
+        if (demandId == null || demandId <= 0) {
+            throw new ResourceNotFoundException("ProjectDemand", "id", demandId);
+        }
+
+        if (minScore != null && (minScore < 0.0 || minScore > 100.0)) {
+            throw new BusinessRuleValidationException("Minimum match score must be between 0 and 100");
+        }
+
+        if (limit != null && limit <= 0) {
+            throw new BusinessRuleValidationException("Limit must be greater than 0");
+        }
+
         ProjectDemand demand = demandRepository.findByIdWithSkills(demandId)
                 .orElseThrow(() -> new ResourceNotFoundException("ProjectDemand", "id", demandId));
 
         List<Employee> allEmployees = employeeRepository.findAll();
         List<CandidateRecommendationResponse> candidates = new ArrayList<>();
 
+        List<ResourceAllocation> demandAllocations = (allocationRepository != null) ?
+                allocationRepository.findByDemandIdAndStatusInWithEmployee(
+                        demand.getId(), List.of(AllocationStatus.CONFIRMED, AllocationStatus.PENDING)
+                ) : List.of();
+
+        Map<Long, ResourceAllocation> activeAllocationByEmpId = new HashMap<>();
+        if (demandAllocations != null) {
+            for (ResourceAllocation alloc : demandAllocations) {
+                if (alloc.getEmployee() != null) {
+                    Long empId = alloc.getEmployee().getId();
+                    ResourceAllocation existing = activeAllocationByEmpId.get(empId);
+                    if (existing == null || (existing.getStatus() != AllocationStatus.CONFIRMED && alloc.getStatus() == AllocationStatus.CONFIRMED)) {
+                        activeAllocationByEmpId.put(empId, alloc);
+                    }
+                }
+            }
+        }
+
         for (Employee employee : allEmployees) {
             List<EmployeeSkill> employeeSkills = employeeSkillRepository.findByEmployeeIdWithDetails(employee.getId());
-            CandidateRecommendationResponse candidate = evaluateCandidate(demand, employee, employeeSkills);
+            ResourceAllocation activeAlloc = activeAllocationByEmpId.get(employee.getId());
+            CandidateRecommendationResponse candidate = evaluateCandidate(demand, employee, employeeSkills, activeAlloc);
             candidates.add(candidate);
         }
 
@@ -97,6 +136,13 @@ public class CandidateRecommendationServiceImpl implements CandidateRecommendati
 
     @Override
     public CandidateRecommendationResponse evaluateCandidateForDemand(Long demandId, Long employeeId) {
+        if (demandId == null || demandId <= 0) {
+            throw new ResourceNotFoundException("ProjectDemand", "id", demandId);
+        }
+        if (employeeId == null || employeeId <= 0) {
+            throw new ResourceNotFoundException("Employee", "id", employeeId);
+        }
+
         ProjectDemand demand = demandRepository.findByIdWithSkills(demandId)
                 .orElseThrow(() -> new ResourceNotFoundException("ProjectDemand", "id", demandId));
 
@@ -104,13 +150,46 @@ public class CandidateRecommendationServiceImpl implements CandidateRecommendati
                 .orElseThrow(() -> new ResourceNotFoundException("Employee", "id", employeeId));
 
         List<EmployeeSkill> employeeSkills = employeeSkillRepository.findByEmployeeIdWithDetails(employee.getId());
-        return evaluateCandidate(demand, employee, employeeSkills);
+        List<ResourceAllocation> activeAllocs = (allocationRepository != null) ?
+                allocationRepository.findActiveAllocationsForEmployeeAndDemand(
+                        employeeId, demandId, List.of(AllocationStatus.CONFIRMED, AllocationStatus.PENDING)
+                ) : List.of();
+        ResourceAllocation activeAlloc = (activeAllocs != null && !activeAllocs.isEmpty()) ? activeAllocs.get(0) : null;
+        return evaluateCandidate(demand, employee, employeeSkills, activeAlloc);
     }
 
     private CandidateRecommendationResponse evaluateCandidate(ProjectDemand demand, Employee employee,
                                                               List<EmployeeSkill> employeeSkills) {
+        return evaluateCandidate(demand, employee, employeeSkills, null);
+    }
+
+    private CandidateRecommendationResponse evaluateCandidate(ProjectDemand demand, Employee employee,
+                                                              List<EmployeeSkill> employeeSkills,
+                                                              ResourceAllocation activeAllocation) {
         boolean eligible = true;
         List<String> exclusionReasons = new ArrayList<>();
+
+        // 0. Active Allocation on Target Demand Check
+        AllocationStatus existingStatus = null;
+        Long existingAllocId = null;
+
+        if (activeAllocation != null) {
+            existingStatus = activeAllocation.getStatus();
+            existingAllocId = activeAllocation.getId();
+            if (existingStatus == AllocationStatus.PENDING) {
+                eligible = false;
+                String reason = "An active allocation request already exists for this demand";
+                if (!exclusionReasons.contains(reason)) {
+                    exclusionReasons.add(reason);
+                }
+            } else if (existingStatus == AllocationStatus.CONFIRMED) {
+                eligible = false;
+                String reason = "Employee is already allocated to this demand";
+                if (!exclusionReasons.contains(reason)) {
+                    exclusionReasons.add(reason);
+                }
+            }
+        }
 
         // 1. Availability and Capacity Evaluation
         AvailabilityAssessmentResponse availResp = availabilityService.assessEmployeeAvailability(
@@ -279,7 +358,9 @@ public class CandidateRecommendationServiceImpl implements CandidateRecommendati
                 missingOptionalSkills,
                 availResp,
                 exclusionReasons,
-                matchExplanation
+                matchExplanation,
+                existingStatus,
+                existingAllocId
         );
     }
 }

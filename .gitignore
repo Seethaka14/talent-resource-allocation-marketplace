@@ -31,3 +31,21 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Logs & Environment Overrides ###
+*.log
+logs/
+*.tmp
+cookies.txt
+.env
+.env.*
+!.env.example
+.env.local
+
+### Agentic & Generated Artifacts ###
+.system_generated/
+
+### OS Generated ###
+.DS_Store
+Thumbs.db
+

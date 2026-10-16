@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - Talent &amp; Resource Allocation Marketplace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .auth-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1.5rem;
+            background: radial-gradient(circle at 50% 20%, rgba(99, 102, 241, 0.12) 0%, transparent 60%), var(--bg-primary);
+        }
+
+        .auth-container {
+            width: 100%;
+            max-width: 760px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .auth-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            text-decoration: none;
+        }
+
+        .auth-brand-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-md);
+            background: var(--accent-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+        }
+
+        .auth-brand-text h1 {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+
+        .auth-brand-text p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .role-selection-grid {
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .role-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 2.25rem 1.75rem;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: var(--transition);
+            cursor: pointer;
+            box-shadow: var(--shadow-subtle);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .role-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-glow);
+            background: var(--bg-card-hover);
+        }
+
+        .role-icon-box {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(99, 102, 241, 0.15);
+            color: #a5b4fc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.25rem;
+            transition: var(--transition);
+        }
+
+        .role-card:hover .role-icon-box {
+            background: var(--accent-primary);
+            color: #ffffff;
+            transform: scale(1.08);
+        }
+
+        .role-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.6rem;
+        }
+
+        .role-description {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 1.75rem;
+            flex-grow: 1;
+        }
+
+        .role-action-btn {
+            width: 100%;
+            padding: 0.75rem 1.25rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border-radius: var(--radius-sm);
+            background: rgba(99, 102, 241, 0.2);
+            color: #c7d2fe;
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .role-card:hover .role-action-btn {
+            background: var(--accent-primary);
+            color: #ffffff;
+            border-color: var(--accent-primary);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-wrapper">
+        <div class="auth-container">
+            <!-- Brand Logo -->
+            <a href="/" class="auth-brand" aria-label="Talent Marketplace">
+                <div class="auth-brand-icon">
+                    <span style="font-size: 0.95rem; font-weight: 800; color: #fff;">TRM</span>
+                </div>
+                <div class="auth-brand-text">
+                    <h1>Talent Marketplace</h1>
+                    <p>AI-Driven Resource Matching</p>
+                </div>
+            </a>
+
+            <!-- Two Role Cards -->
+            <div class="role-selection-grid">
+                <!-- Card 1: Project Manager -->
+                <a href="/login/project-manager" class="role-card" id="cardProjectManager" aria-label="Sign in as Project Manager">
+                    <div class="role-icon-box">
+                        <svg viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" stroke-width="2" fill="none">
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                        </svg>
+                    </div>
+                    <h2 class="role-title">Project Manager</h2>
+                    <p class="role-description">Intake demands, evaluate candidate rankings, and submit allocation requests for authorized projects.</p>
+                    <div class="role-action-btn">
+                        Sign In as Project Manager &rarr;
+                    </div>
+                </a>
+
+                <!-- Card 2: Resource Manager -->
+                <a href="/login/resource-manager" class="role-card" id="cardResourceManager" aria-label="Sign in as Resource Manager">
+                    <div class="role-icon-box">
+                        <svg viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" stroke-width="2" fill="none">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                    </div>
+                    <h2 class="role-title">Resource Manager</h2>
+                    <p class="role-description">Review employee capacity, approve or reject allocation requests, and inspect organization analytics.</p>
+                    <div class="role-action-btn">
+                        Sign In as Resource Manager &rarr;
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check if already authenticated; if so, redirect directly to dashboard
+        (async function checkExistingAuth() {
+            try {
+                const res = await fetch('/api/auth/me');
+                if (res.ok) {
+                    window.location.href = '/';
+                }
+            } catch (e) {
+                // Ignore and show selection
+            }
+        })();
+    </script>
+</body>
+</html>

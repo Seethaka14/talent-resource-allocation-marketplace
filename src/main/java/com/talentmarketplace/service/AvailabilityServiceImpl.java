@@ -71,6 +71,17 @@ public class AvailabilityServiceImpl implements AvailabilityService {
 
         int maxCapacity = (employee.getMaxCapacityPercent() != null) ? employee.getMaxCapacityPercent() : 100;
 
+        // Fetch overlapping pending allocations to report pipeline status without consuming hard capacity
+        List<ResourceAllocation> pendingAllocs = (allocationRepository != null) ?
+                allocationRepository.findOverlappingPendingAllocations(employee.getId(), startDate, endDate) : List.of();
+        int pendingCount = (pendingAllocs != null) ? pendingAllocs.size() : 0;
+        int peakPending = calculatePeakAllocationFromList(pendingAllocs, startDate, endDate);
+
+        // Calculate peak confirmed allocation and remaining capacity upfront
+        // Policy: CONFIRMED allocations reserve hard capacity. PENDING allocations do not consume capacity across demands.
+        int peakAllocated = calculatePeakAllocation(employee.getId(), startDate, endDate, excludeAllocationId);
+        int remainingCapacity = Math.max(0, maxCapacity - peakAllocated);
+
         // 1. Employment Status Check (Hard gate: must be ACTIVE)
         if (employee.getEmploymentStatus() != EmploymentStatus.ACTIVE) {
             return new AvailabilityAssessmentResponse(
@@ -84,6 +95,9 @@ public class AvailabilityServiceImpl implements AvailabilityService {
                     requestedPercent,
                     false,
                     0,
+                    0,
+                    pendingCount,
+                    peakPending,
                     List.of(),
                     String.format("Employee is not available (employment status is %s)", employee.getEmploymentStatus())
             );
@@ -101,7 +115,10 @@ public class AvailabilityServiceImpl implements AvailabilityService {
                     endDate,
                     requestedPercent,
                     false,
-                    maxCapacity,
+                    peakAllocated,
+                    remainingCapacity,
+                    pendingCount,
+                    peakPending,
                     List.of(),
                     String.format("Requested allocation (%d%%) exceeds employee configured maximum capacity limit (%d%%)",
                             requestedPercent, maxCapacity)
@@ -129,7 +146,10 @@ public class AvailabilityServiceImpl implements AvailabilityService {
                     endDate,
                     requestedPercent,
                     false,
+                    peakAllocated,
                     0,
+                    pendingCount,
+                    peakPending,
                     unavailResponses,
                     String.format("Employee has scheduled unavailability (%s) from %s to %s",
                             primaryConflict.getType(), primaryConflict.getStartDate(), primaryConflict.getEndDate())
@@ -137,9 +157,6 @@ public class AvailabilityServiceImpl implements AvailabilityService {
         }
 
         // 4. Remaining Capacity Check with Real Active Confirmed Allocation Records
-        int peakAllocated = calculatePeakAllocation(employee.getId(), startDate, endDate, excludeAllocationId);
-        int remainingCapacity = Math.max(0, maxCapacity - peakAllocated);
-
         if (requestedPercent > remainingCapacity) {
             return new AvailabilityAssessmentResponse(
                     employee.getId(),
@@ -151,7 +168,10 @@ public class AvailabilityServiceImpl implements AvailabilityService {
                     endDate,
                     requestedPercent,
                     false,
+                    peakAllocated,
                     remainingCapacity,
+                    pendingCount,
+                    peakPending,
                     List.of(),
                     String.format("Requested allocation (%d%%) exceeds remaining available capacity (%d%%, currently allocated: %d%%)",
                             requestedPercent, remainingCapacity, peakAllocated)
@@ -159,6 +179,10 @@ public class AvailabilityServiceImpl implements AvailabilityService {
         }
 
         // 5. Fully Available
+        String reasonText = pendingCount > 0
+                ? String.format("Employee is fully available with %d%% remaining capacity (%d pending proposal(s) awaiting review)", remainingCapacity, pendingCount)
+                : String.format("Employee is fully available with %d%% remaining capacity", remainingCapacity);
+
         return new AvailabilityAssessmentResponse(
                 employee.getId(),
                 employee.getEmployeeCode(),
@@ -169,9 +193,12 @@ public class AvailabilityServiceImpl implements AvailabilityService {
                 endDate,
                 requestedPercent,
                 true,
+                peakAllocated,
                 remainingCapacity,
+                pendingCount,
+                peakPending,
                 List.of(),
-                String.format("Employee is fully available with %d%% remaining capacity", remainingCapacity)
+                reasonText
         );
     }
 
@@ -191,15 +218,23 @@ public class AvailabilityServiceImpl implements AvailabilityService {
             );
         }
 
+        return calculatePeakAllocationFromList(allocations, startDate, endDate);
+    }
+
+    private int calculatePeakAllocationFromList(List<ResourceAllocation> allocations, LocalDate startDate, LocalDate endDate) {
         if (allocations == null || allocations.isEmpty()) {
             return 0;
         }
 
         Set<LocalDate> criticalDates = new TreeSet<>();
         criticalDates.add(startDate);
+        criticalDates.add(endDate);
         for (ResourceAllocation a : allocations) {
             if (!a.getStartDate().isBefore(startDate) && !a.getStartDate().isAfter(endDate)) {
                 criticalDates.add(a.getStartDate());
+            }
+            if (!a.getEndDate().isBefore(startDate) && !a.getEndDate().isAfter(endDate)) {
+                criticalDates.add(a.getEndDate());
             }
             LocalDate dayAfterEnd = a.getEndDate().plusDays(1);
             if (!dayAfterEnd.isBefore(startDate) && !dayAfterEnd.isAfter(endDate)) {

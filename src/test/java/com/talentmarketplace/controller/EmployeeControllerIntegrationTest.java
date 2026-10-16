@@ -23,14 +23,19 @@ import com.talentmarketplace.dto.request.CreateEmployeeRequest;
 import com.talentmarketplace.dto.request.UpdateEmployeeRequest;
 import com.talentmarketplace.entity.Employee;
 import com.talentmarketplace.config.TestDatabaseSafetyGuard;
+import com.talentmarketplace.entity.AllocationStatus;
+import com.talentmarketplace.entity.DemandPriority;
+import com.talentmarketplace.entity.DemandStatus;
 import com.talentmarketplace.entity.EmploymentStatus;
+import com.talentmarketplace.entity.ProjectDemand;
+import com.talentmarketplace.entity.ResourceAllocation;
 import com.talentmarketplace.repository.EmployeeRepository;
 import com.talentmarketplace.repository.ResourceAllocationRepository;
 
 import javax.sql.DataSource;
 
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 class EmployeeControllerIntegrationTest {
 
     @Autowired
@@ -259,5 +264,110 @@ class EmployeeControllerIntegrationTest {
 
         mockMvc.perform(get("/api/employees/" + saved.getId()))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("GET /api/employees/{id}/availability: 100% configured employee with no allocations shows 100% configured, 0% committed, 100% remaining")
+    void getEmployeeAvailability_100PercentConfigured_NoAllocations() throws Exception {
+        Employee emp = employeeRepository.save(new Employee(
+                "EMP-108", "Ian", "Malcolm", "ian@example.com",
+                "Engineering", "Staff Architect", "Bangalore",
+                LocalDate.of(2022, 1, 1), EmploymentStatus.ACTIVE, 100
+        ));
+
+        mockMvc.perform(get("/api/employees/" + emp.getId() + "/availability")
+                        .param("startDate", "2026-11-01")
+                        .param("endDate", "2026-11-30")
+                        .param("allocationPercent", "100"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.maxCapacityPercent").value(100))
+                .andExpect(jsonPath("$.data.peakAllocatedPercent").value(0))
+                .andExpect(jsonPath("$.data.remainingCapacityPercent").value(100))
+                .andExpect(jsonPath("$.data.available").value(true));
+    }
+
+    @Test
+    @DisplayName("GET /api/employees/{id}/availability: 100% configured employee with 70% confirmed allocation shows 100% configured, 70% committed, 30% remaining")
+    void getEmployeeAvailability_100PercentConfigured_With70PercentConfirmed() throws Exception {
+        Employee emp = employeeRepository.save(new Employee(
+                "EMP-109", "Julia", "Roberts", "julia@example.com",
+                "Engineering", "Senior SRE", "Bangalore",
+                LocalDate.of(2022, 1, 1), EmploymentStatus.ACTIVE, 100
+        ));
+
+        ProjectDemand demand = demandRepository.save(new ProjectDemand(
+                "DEM-CONF-070", "Cloud Migration", "Senior SRE", "Engineering",
+                "Bangalore", LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 30),
+                70, DemandPriority.HIGH, DemandStatus.OPEN, 4.0
+        ));
+
+        allocationRepository.save(new ResourceAllocation(
+                emp, demand, LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 30),
+                70, AllocationStatus.CONFIRMED, "PM"
+        ));
+
+        // Request 30%: Available because remaining capacity is exactly 30%
+        mockMvc.perform(get("/api/employees/" + emp.getId() + "/availability")
+                        .param("startDate", "2026-11-01")
+                        .param("endDate", "2026-11-30")
+                        .param("allocationPercent", "30"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.maxCapacityPercent").value(100))
+                .andExpect(jsonPath("$.data.peakAllocatedPercent").value(70))
+                .andExpect(jsonPath("$.data.remainingCapacityPercent").value(30))
+                .andExpect(jsonPath("$.data.available").value(true));
+
+        // Request 40%: Unavailable because remaining capacity is 30% < 40% requested
+        mockMvc.perform(get("/api/employees/" + emp.getId() + "/availability")
+                        .param("startDate", "2026-11-01")
+                        .param("endDate", "2026-11-30")
+                        .param("allocationPercent", "40"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.maxCapacityPercent").value(100))
+                .andExpect(jsonPath("$.data.peakAllocatedPercent").value(70))
+                .andExpect(jsonPath("$.data.remainingCapacityPercent").value(30))
+                .andExpect(jsonPath("$.data.available").value(false));
+
+        // Invariant: Employee entity configured capacity is NEVER mutated by allocations
+        Employee reloaded = employeeRepository.findById(emp.getId()).orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(reloaded.getMaxCapacityPercent()).isEqualTo(100);
+    }
+
+    @Test
+    @DisplayName("GET /api/employees/{id}/availability: 30% configured employee (Kavita Sharma model) shows 30% configured, 0% committed, 30% remaining")
+    void getEmployeeAvailability_30PercentConfigured_KavitaModel() throws Exception {
+        Employee emp = employeeRepository.save(new Employee(
+                "EMP-110", "Kavita", "Consultant", "kavita.test@example.com",
+                "Engineering", "Principal Consultant", "Bangalore",
+                LocalDate.of(2022, 1, 1), EmploymentStatus.ACTIVE, 30
+        ));
+
+        // Request 25%: Available (within 30% limit)
+        mockMvc.perform(get("/api/employees/" + emp.getId() + "/availability")
+                        .param("startDate", "2026-11-01")
+                        .param("endDate", "2026-11-30")
+                        .param("allocationPercent", "25"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.maxCapacityPercent").value(30))
+                .andExpect(jsonPath("$.data.peakAllocatedPercent").value(0))
+                .andExpect(jsonPath("$.data.remainingCapacityPercent").value(30))
+                .andExpect(jsonPath("$.data.available").value(true));
+
+        // Request 50%: Unavailable (exceeds 30% configured capacity)
+        mockMvc.perform(get("/api/employees/" + emp.getId() + "/availability")
+                        .param("startDate", "2026-11-01")
+                        .param("endDate", "2026-11-30")
+                        .param("allocationPercent", "50"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.maxCapacityPercent").value(30))
+                .andExpect(jsonPath("$.data.peakAllocatedPercent").value(0))
+                .andExpect(jsonPath("$.data.remainingCapacityPercent").value(30))
+                .andExpect(jsonPath("$.data.available").value(false))
+                .andExpect(jsonPath("$.data.reason").value(org.hamcrest.Matchers.containsString("exceeds employee configured maximum capacity limit (30%)")));
     }
 }

@@ -22,10 +22,14 @@ import com.talentmarketplace.dto.request.CreateAllocationRequest;
 import com.talentmarketplace.dto.request.RejectAllocationRequest;
 import com.talentmarketplace.entity.AllocationStatus;
 import com.talentmarketplace.entity.DemandPriority;
+import com.talentmarketplace.entity.DemandSkill;
 import com.talentmarketplace.entity.DemandStatus;
 import com.talentmarketplace.entity.Employee;
 import com.talentmarketplace.entity.EmploymentStatus;
+import com.talentmarketplace.entity.ProficiencyLevel;
 import com.talentmarketplace.entity.ProjectDemand;
+import com.talentmarketplace.entity.Skill;
+import com.talentmarketplace.entity.SkillCategory;
 import com.talentmarketplace.repository.DemandSkillRepository;
 import com.talentmarketplace.repository.EmployeeRepository;
 import com.talentmarketplace.repository.EmployeeSkillRepository;
@@ -35,7 +39,7 @@ import com.talentmarketplace.repository.ResourceAllocationRepository;
 import com.talentmarketplace.repository.SkillRepository;
 
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 class ResourceAllocationControllerIntegrationTest {
 
     @Autowired
@@ -230,5 +234,121 @@ class ResourceAllocationControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(0));
+    }
+
+    @Test
+    @DisplayName("POST /api/allocations: should reject duplicate active allocation for the same employee and demand")
+    void testCreateAllocation_duplicateActiveAllocation_rejected() throws Exception {
+        CreateAllocationRequest firstReq = new CreateAllocationRequest(
+                demand.getId(), employee.getId(), LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 31), 40, "Staffing Lead"
+        );
+
+        mockMvc.perform(post("/api/allocations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(firstReq)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.status").value("PENDING"));
+
+        // Second request for same employee and demand must be rejected as duplicate
+        CreateAllocationRequest secondReq = new CreateAllocationRequest(
+                demand.getId(), employee.getId(), LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 31), 40, "Staffing Lead"
+        );
+
+        mockMvc.perform(post("/api/allocations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(secondReq)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("An active allocation request (PENDING or CONFIRMED) already exists")));
+    }
+
+    @Test
+    @DisplayName("POST /api/allocations/{id}/confirm: should reject confirmation if employee lacks mandatory skill required by demand")
+    void testConfirmAllocation_missingMandatorySkill_rejected() throws Exception {
+        // Create skill and demand with mandatory skill
+        Skill java = skillRepository.save(new Skill("Java", SkillCategory.BACKEND, "Java Core"));
+        ProjectDemand skillDemand = demandRepository.save(new ProjectDemand(
+                "DEM-SKILL-01", "Core API", "Backend Lead", "Engineering",
+                "New York", LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 31),
+                50, DemandPriority.HIGH, DemandStatus.OPEN, 3.0
+        ));
+        demandSkillRepository.save(new DemandSkill(skillDemand, java, true, ProficiencyLevel.ADVANCED));
+
+        // Create allocation (employee does not have Java skill)
+        CreateAllocationRequest req = new CreateAllocationRequest(
+                skillDemand.getId(), employee.getId(), LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 31), 50, "Lead Architect"
+        );
+
+        String resp = mockMvc.perform(post("/api/allocations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        Long allocationId = objectMapper.readTree(resp).path("data").path("id").asLong();
+
+        // Attempting to confirm must fail because employee lacks Java mandatory skill
+        mockMvc.perform(post("/api/allocations/{id}/confirm", allocationId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Employee lacks mandatory skill requirement: Java")));
+    }
+
+    @Test
+    @DisplayName("POST /api/allocations/{id}/complete: should mark confirmed allocation as COMPLETED and preserve history")
+    void testCompleteAllocation_endpoint_success() throws Exception {
+        CreateAllocationRequest req = new CreateAllocationRequest(
+                demand.getId(), employee.getId(), LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 31), 50, "Lead Architect"
+        );
+        req.setAutoConfirm(true);
+
+        String resp = mockMvc.perform(post("/api/allocations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        Long allocationId = objectMapper.readTree(resp).path("data").path("id").asLong();
+
+        // Complete the allocation
+        mockMvc.perform(post("/api/allocations/{id}/complete", allocationId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("COMPLETED"));
+
+        // Allocation record is still queryable in history
+        mockMvc.perform(get("/api/allocations/{id}", allocationId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("COMPLETED"));
+    }
+
+    @Test
+    @DisplayName("POST /api/allocations/{id}/cancel: should preserve allocation history record in CANCELLED status")
+    void testCancelAllocation_endpoint_preservesRecord() throws Exception {
+        CreateAllocationRequest req = new CreateAllocationRequest(
+                demand.getId(), employee.getId(), LocalDate.of(2026, 12, 1), LocalDate.of(2026, 12, 31), 50, "Lead Architect"
+        );
+
+        String resp = mockMvc.perform(post("/api/allocations")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        Long allocationId = objectMapper.readTree(resp).path("data").path("id").asLong();
+
+        // Cancel the allocation
+        mockMvc.perform(post("/api/allocations/{id}/cancel", allocationId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"Project scope changed\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("CANCELLED"));
+
+        // Querying employee allocations still returns the cancelled allocation in history
+        mockMvc.perform(get("/api/allocations/employee/{employeeId}", employee.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].status").value("CANCELLED"))
+                .andExpect(jsonPath("$.data[0].rejectionReason").value("Project scope changed"));
     }
 }

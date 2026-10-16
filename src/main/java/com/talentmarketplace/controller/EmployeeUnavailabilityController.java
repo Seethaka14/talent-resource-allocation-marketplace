@@ -23,7 +23,10 @@ import com.talentmarketplace.service.EmployeeUnavailabilityService;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/api/employees/{employeeId}/unavailability")
+@RequestMapping(path = {
+        "/api/employees/{employeeId}/unavailability",
+        "/api/employees/{employeeId}/unavailabilities"
+})
 public class EmployeeUnavailabilityController {
 
     private final EmployeeUnavailabilityService unavailabilityService;

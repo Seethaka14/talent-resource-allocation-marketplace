@@ -534,10 +534,14 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
         Set<LocalDate> criticalDates = new TreeSet<>();
         criticalDates.add(windowStart);
+        criticalDates.add(windowEnd);
 
         for (ResourceAllocation a : allocations) {
             if (!a.getStartDate().isBefore(windowStart) && !a.getStartDate().isAfter(windowEnd)) {
                 criticalDates.add(a.getStartDate());
+            }
+            if (!a.getEndDate().isBefore(windowStart) && !a.getEndDate().isAfter(windowEnd)) {
+                criticalDates.add(a.getEndDate());
             }
             LocalDate dayAfterEnd = a.getEndDate().plusDays(1);
             if (!dayAfterEnd.isBefore(windowStart) && !dayAfterEnd.isAfter(windowEnd)) {

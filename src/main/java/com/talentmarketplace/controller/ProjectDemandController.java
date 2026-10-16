@@ -28,6 +28,7 @@ import com.talentmarketplace.dto.response.DemandResponse;
 import com.talentmarketplace.entity.DemandPriority;
 import com.talentmarketplace.entity.DemandStatus;
 import com.talentmarketplace.service.CandidateRecommendationService;
+import com.talentmarketplace.service.DemandCodeGeneratorService;
 import com.talentmarketplace.service.ProjectDemandService;
 
 import jakarta.validation.Valid;
@@ -38,11 +39,20 @@ public class ProjectDemandController {
 
     private final ProjectDemandService demandService;
     private final CandidateRecommendationService candidateRecommendationService;
+    private final DemandCodeGeneratorService demandCodeGeneratorService;
 
     public ProjectDemandController(ProjectDemandService demandService,
-                                   CandidateRecommendationService candidateRecommendationService) {
+                                   CandidateRecommendationService candidateRecommendationService,
+                                   DemandCodeGeneratorService demandCodeGeneratorService) {
         this.demandService = demandService;
         this.candidateRecommendationService = candidateRecommendationService;
+        this.demandCodeGeneratorService = demandCodeGeneratorService;
+    }
+
+    @GetMapping("/next-code")
+    public ResponseEntity<ApiResponse<Map<String, String>>> getNextDemandCode() {
+        String nextCode = demandCodeGeneratorService.previewNextDemandCode();
+        return ResponseEntity.ok(ApiResponse.ok(Map.of("demandCode", nextCode)));
     }
 
     @PostMapping
